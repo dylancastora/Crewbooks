@@ -47,6 +47,28 @@ No data ever touches a third-party server.
 
 ---
 
+## To Do
+
+Features:
+- Sales tax calculations
+- Due date system
+- Add Crewbooks link to email footer, PDF
+- Name photo upload using [Description-Date-UniqueID]
+- If navigating away from job edit with unsaved changes, confirm with user.
+- Add "Invoice Issued" date to PDF.
+- Save Invoice PDFs in Google Drive, with a unique reference to the communication that generated it.
+
+UI Improvements:
+- Consistent button sizes.
+
+Known Bugs:
+- Expenses get marked billed when they are added as line items, not when the job is saved.  If job unsaved, expense becomes unbillable.
+- On mobile, take/upload photo button forces "take," no upload option.
+- Mileage shows (1) in job line item summary, even with no values entered.
+- Job Amounts calculating before all data is loaded.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
