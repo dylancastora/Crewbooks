@@ -22,12 +22,12 @@ function rowToJob(row: Record<string, string>): Job {
 
 export function generateJobNumber(existingJobs: Job[], settings: Settings): string {
   const startNumber = parseInt(settings.invoiceStartNumber || '1') || 1
-  if (existingJobs.length === 0) return String(startNumber)
+  if (existingJobs.length === 0) return String(startNumber).padStart(4, '0')
   const maxNumber = Math.max(
     ...existingJobs.map((j) => parseInt(j.jobNumber) || 0),
     startNumber - 1,
   )
-  return String(maxNumber + 1)
+  return String(maxNumber + 1).padStart(4, '0')
 }
 
 export async function getJobs(spreadsheetId: string, token: string): Promise<Job[]> {

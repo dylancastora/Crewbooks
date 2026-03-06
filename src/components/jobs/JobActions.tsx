@@ -93,7 +93,7 @@ export function JobActions({ job, preferredAction, menuActions, onSave, saving }
                 onClick={() => setConfirmAction(null)}
                 className="flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                {confirmAction.label === 'Cancel' ? 'Keep Job' : 'Cancel'}
               </button>
               <button
                 type="button"
@@ -104,7 +104,7 @@ export function JobActions({ job, preferredAction, menuActions, onSave, saving }
                 }}
                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white ${confirmAction.isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary-dark'}`}
               >
-                Confirm
+                {confirmAction.label === 'Cancel' ? 'Cancel Job' : 'Confirm'}
               </button>
             </div>
           </div>

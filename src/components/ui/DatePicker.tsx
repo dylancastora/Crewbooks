@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatDate as formatDateDisplay } from '../../utils/formatDate'
 
 interface DatePickerProps {
   selectedDates: string[]
@@ -94,7 +95,7 @@ export function DatePicker({ selectedDates, onChange, label }: DatePickerProps) 
             <div className="flex flex-wrap gap-1 mt-1">
               {selectedDates.map((d) => (
                 <span key={d} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                  {d}
+                  {formatDateDisplay(d)}
                 </span>
               ))}
             </div>

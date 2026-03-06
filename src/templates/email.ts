@@ -26,12 +26,37 @@ function computeShootDays(shootDates: string): number {
 export function generateQuoteHtml(
   job: Job,
   items: JobItem[],
+  expenses: Expense[],
   client: Client,
   contacts: Contact[],
   settings: Settings,
   totals: JobTotals,
 ): string {
   const recipientName = contacts[0]?.name || client.company
+
+  const expenseRows = expenses.length > 0
+    ? `
+      <h3 style="margin-top: 20px;">Reimbursable Expenses</h3>
+      <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+        <thead>
+          <tr style="background: #f3f4f6;">
+            <th style="padding: 8px; text-align: left;">Description</th>
+            <th style="padding: 8px; text-align: center;">Date</th>
+            <th style="padding: 8px; text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${expenses.map((e) => `
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${e.description}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${e.date}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(e.amount)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+    : ''
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -52,6 +77,8 @@ export function generateQuoteHtml(
         </thead>
         <tbody>${itemRows(items)}</tbody>
       </table>
+
+      ${expenseRows}
 
       <table style="width: 300px; margin-left: auto;">
         <tr><td style="padding: 4px;">Subtotal</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.total - totals.taxAmount)}</td></tr>

@@ -5,6 +5,7 @@ import { useJobs } from '../hooks/useJobs'
 import { useClients } from '../hooks/useClients'
 import { useRates } from '../hooks/useRates'
 import { useSettings } from '../hooks/useSettings'
+import { useExpenses } from '../hooks/useExpenses'
 import { getJobItems, setJobItems } from '../services/api/jobItems'
 import { generateJobNumber } from '../services/api/jobs'
 import { JobStatus, Unit } from '../types'
@@ -13,7 +14,7 @@ import { LineItemEditor } from '../components/jobs/LineItemEditor'
 import { JobSummary } from '../components/jobs/JobSummary'
 import { Spinner } from '../components/ui/Spinner'
 import { useToast } from '../components/ui/Toast'
-import type { Job, JobItem } from '../types'
+import type { Job, JobItem, Expense } from '../types'
 
 type PartialItem = Omit<JobItem, 'id' | 'jobId' | 'jobNumber' | 'sortOrder' | 'amount'>
 
@@ -30,6 +31,7 @@ export function JobDetailPage() {
   const { clients, contacts, createClient, createContact } = useClients()
   const { labor, equipment, createRate } = useRates()
   const { settings } = useSettings()
+  const { expenses, updateExpense } = useExpenses()
   const { showToast } = useToast()
 
   const isNew = id === 'new'
@@ -81,6 +83,19 @@ export function JobDetailPage() {
       })))
     }).finally(() => setLoadingItems(false))
   }, [existingJob, spreadsheetId, getToken])
+
+  // Expense linking
+  const linkedExpenses = expenses.filter((e) => e.jobId === existingJob?.id)
+  const availableExpenses = expenses.filter((e) => e.clientId === formData.clientId && !e.billed)
+  const expensesSubtotal = linkedExpenses.reduce((sum, e) => sum + e.amount, 0)
+
+  const handleLinkExpense = useCallback(async (expense: Expense) => {
+    await updateExpense({ ...expense, jobId: existingJob?.id || '', billed: true })
+  }, [updateExpense, existingJob?.id])
+
+  const handleUnlinkExpense = useCallback(async (expense: Expense) => {
+    await updateExpense({ ...expense, jobId: '', billed: false })
+  }, [updateExpense])
 
   const handleCreateRate = useCallback(async (type: 'Labor' | 'Equipment', data: { name: string; rate: number; taxable: boolean }) => {
     await createRate(type, { ...data, unit: Unit.Day, isActive: true })
@@ -198,10 +213,15 @@ export function JobDetailPage() {
             shootDays={shootDays || 1}
             readOnly={lineItemsReadOnly}
             onCreateRate={handleCreateRate}
+            clientId={formData.clientId}
+            expenses={[...linkedExpenses, ...availableExpenses]}
+            jobId={existingJob?.id}
+            onLinkExpense={handleLinkExpense}
+            onUnlinkExpense={handleUnlinkExpense}
           />
         </div>
 
-        <JobSummary items={items} taxRate={0} shootDays={shootDays || 1} />
+        <JobSummary items={items} taxRate={0} shootDays={shootDays || 1} expensesSubtotal={expensesSubtotal} />
 
         <button
           onClick={handleSave}

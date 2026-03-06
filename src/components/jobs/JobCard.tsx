@@ -3,6 +3,7 @@ import { Card } from '../ui/Card'
 import { DropdownMenu } from '../ui/DropdownMenu'
 import { JobStatusBadge } from './JobStatusBadge'
 import { CommunicationsLog } from './CommunicationsLog'
+import { formatDate } from '../../utils/formatDate'
 import type { Job, JobItem, JobTotals, Communication } from '../../types'
 
 interface PreferredAction {
@@ -58,36 +59,40 @@ export function JobCard({ job, clientName, totals, items, communications, prefer
   return (
     <>
       <Card>
-        <div className="flex items-center justify-between" onClick={() => setExpanded(!expanded)}>
-          <div className="flex-1 cursor-pointer">
+        <div className="cursor-pointer" onClick={() => setExpanded(!expanded)}>
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium">#{job.jobNumber}</span>
               <JobStatusBadge status={job.status} />
               {job.cancelled && <JobStatusBadge status="cancelled" />}
             </div>
-            <p className="text-sm text-gray-500">{clientName}</p>
-            {job.shootDates && <p className="text-xs text-gray-400">{job.shootDates}</p>}
-          </div>
-          <div className="flex items-center gap-2">
             <span className="font-semibold">{formatCurrency(totals.total)}</span>
-            {preferredAction && (
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={(e) => { e.stopPropagation(); handleAction(preferredAction.handler) }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium min-h-[36px] disabled:opacity-50 ${preferredAction.colorClass}`}
-              >
-                {actionLoading ? '...' : preferredAction.label}
-              </button>
-            )}
-            <DropdownMenu
-              items={menuActions.map((a) => ({
-                label: a.label,
-                onClick: () => handleMenuClick(a),
-                isDanger: a.isDanger,
-              }))}
-            />
           </div>
+          <p className="text-sm text-gray-500 mt-1">{clientName}</p>
+          {job.shootDates && (
+            <p className="text-xs text-gray-400 mt-1">
+              {job.shootDates.split(',').map((d) => formatDate(d.trim())).join(', ')}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 mt-3">
+          {preferredAction && (
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={() => handleAction(preferredAction.handler)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium min-h-[36px] disabled:opacity-50 ${preferredAction.colorClass}`}
+            >
+              {actionLoading ? '...' : preferredAction.label}
+            </button>
+          )}
+          <DropdownMenu
+            items={menuActions.map((a) => ({
+              label: a.label,
+              onClick: () => handleMenuClick(a),
+              isDanger: a.isDanger,
+            }))}
+          />
         </div>
 
         {expanded && (
@@ -132,7 +137,7 @@ export function JobCard({ job, clientName, totals, items, communications, prefer
                 onClick={() => setConfirmAction(null)}
                 className="flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                {confirmAction.label === 'Cancel' ? 'Keep Job' : 'Cancel'}
               </button>
               <button
                 type="button"
@@ -143,7 +148,7 @@ export function JobCard({ job, clientName, totals, items, communications, prefer
                 }}
                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white ${confirmAction.isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary-dark'}`}
               >
-                Confirm
+                {confirmAction.label === 'Cancel' ? 'Cancel Job' : 'Confirm'}
               </button>
             </div>
           </div>

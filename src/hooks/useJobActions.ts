@@ -5,6 +5,7 @@ import { useClients } from './useClients'
 import { useSettings } from './useSettings'
 import { useCommunications } from './useCommunications'
 import { useJobItems } from './useJobItems'
+import { useExpenses } from './useExpenses'
 import { useJobTotals } from './useJobTotals'
 import { calculateTotals } from '../services/api/jobs'
 import { getExpensesForJob } from '../services/api/expenses'
@@ -35,7 +36,8 @@ export function useJobActions(onComplete?: () => void) {
   const { settings } = useSettings()
   const { getForJob, createCommunication } = useCommunications()
   const { allItems, getItemsForJob } = useJobItems()
-  const totalsMap = useJobTotals(allItems, jobs)
+  const { expenses: allExpenses } = useExpenses()
+  const totalsMap = useJobTotals(allItems, jobs, allExpenses)
 
   const getTotalsForJob = useCallback((job: Job): JobTotals => {
     return totalsMap.get(job.id) || { laborSubtotal: 0, equipmentSubtotal: 0, mileageSubtotal: 0, customSubtotal: 0, expensesSubtotal: 0, taxableSubtotal: 0, taxAmount: 0, total: 0 }
@@ -45,7 +47,8 @@ export function useJobActions(onComplete?: () => void) {
     if (!spreadsheetId) return
     const token = await getToken()
     const jobItems = getItemsForJob(job.id)
-    const totals = calculateTotals(jobItems, [], job.taxRate)
+    const jobExpenses = await getExpensesForJob(spreadsheetId, job.id, token)
+    const totals = calculateTotals(jobItems, jobExpenses, job.taxRate)
 
     if (totals.total === 0) {
       throw new Error('Cannot send quote: job has no line items')
@@ -60,7 +63,7 @@ export function useJobActions(onComplete?: () => void) {
     }
 
     const subject = `Quote #${job.jobNumber} - ${client.company}`
-    const html = generateQuoteHtml(job, jobItems, client, jobContacts, settings, totals)
+    const html = generateQuoteHtml(job, jobItems, jobExpenses, client, jobContacts, settings, totals)
     await sendEmail(token, { to: recipientEmails, subject, html })
 
     const priorComms = getForJob(job.id).filter((c) => c.type === 'quote')
@@ -155,6 +158,12 @@ export function useJobActions(onComplete?: () => void) {
 
   const markPaid = useCallback(async (job: Job) => {
     const updated = { ...job, status: JobStatus.Paid, updatedAt: new Date().toISOString() }
+    await updateJob(updated)
+    onComplete?.()
+  }, [updateJob, onComplete])
+
+  const markUnpaid = useCallback(async (job: Job) => {
+    const updated = { ...job, status: JobStatus.Invoiced, updatedAt: new Date().toISOString() }
     await updateJob(updated)
     onComplete?.()
   }, [updateJob, onComplete])
@@ -263,20 +272,23 @@ export function useJobActions(onComplete?: () => void) {
         )
         break
       case JobStatus.Paid:
+        actions.push(
+          { label: 'Mark Unpaid', handler: () => markUnpaid(job) },
+        )
         break
     }
 
     // Cancel and Delete always available for non-cancelled jobs
     actions.push(
-      { label: 'Cancel', handler: () => cancelJob(job), confirmMessage: 'Cancel this job?' },
+      { label: 'Cancel', handler: () => cancelJob(job), isDanger: true, confirmMessage: 'Cancel this job?' },
       { label: 'Delete', handler: () => deleteJobAction(job), isDanger: true, confirmMessage: 'Delete this job and all its data? This cannot be undone.' },
     )
 
     return actions
-  }, [sendQuote, sendInvoice, approveQuote, revokeApproval, markPaid, cancelJob, uncancelJob, deleteJobAction])
+  }, [sendQuote, sendInvoice, approveQuote, revokeApproval, markPaid, markUnpaid, cancelJob, uncancelJob, deleteJobAction])
 
   return {
-    sendQuote, sendInvoice, approveQuote, revokeApproval, markPaid,
+    sendQuote, sendInvoice, approveQuote, revokeApproval, markPaid, markUnpaid,
     cancelJob, uncancelJob, deleteJob: deleteJobAction,
     getPreferredAction, getMenuActions, getTotalsForJob, totalsMap,
     jobs, allItems, getItemsForJob, getForJob,

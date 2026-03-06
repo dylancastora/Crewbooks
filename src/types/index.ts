@@ -20,6 +20,8 @@ export const ExpenseCategory = {
   Meals: 'Meals',
   Equipment: 'Equipment',
   Supplies: 'Supplies',
+  Rentals: 'Rentals',
+  Parking: 'Parking',
   Other: 'Other',
 } as const
 export type ExpenseCategory = (typeof ExpenseCategory)[keyof typeof ExpenseCategory]
@@ -143,6 +145,7 @@ export interface Expense {
   category: ExpenseCategory
   receiptFileId: string
   receiptFileName: string
+  billed: boolean
   createdAt: string
   updatedAt: string
 }

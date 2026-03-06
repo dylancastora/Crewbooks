@@ -1,10 +1,26 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { generateTestData } from '../services/api/seedData'
 
 export function MorePage() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, spreadsheetId, getToken } = useAuth()
+  const [generating, setGenerating] = useState(false)
+
+  const handleGenerateTestData = async () => {
+    if (!spreadsheetId) return
+    setGenerating(true)
+    try {
+      const token = await getToken()
+      await generateTestData(spreadsheetId, token)
+      window.location.reload()
+    } catch (err) {
+      console.error('Failed to generate test data:', err)
+      setGenerating(false)
+    }
+  }
 
   return (
     <div>
@@ -30,7 +46,10 @@ export function MorePage() {
           <Card>Settings</Card>
         </Link>
       </div>
-      <div className="mt-8">
+      <div className="mt-8 space-y-3">
+        <Button variant="secondary" onClick={handleGenerateTestData} disabled={generating} className="w-full">
+          {generating ? 'Generating...' : 'Generate Test Data'}
+        </Button>
         <Button variant="danger" onClick={signOut} className="w-full">
           Sign Out
         </Button>

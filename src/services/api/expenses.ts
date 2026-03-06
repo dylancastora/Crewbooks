@@ -9,12 +9,13 @@ function now(): string {
   return new Date().toISOString()
 }
 
-const EXPENSE_HEADERS = ['id', 'jobId', 'clientId', 'description', 'amount', 'date', 'category', 'receiptFileId', 'receiptFileName', 'createdAt', 'updatedAt']
+const EXPENSE_HEADERS = ['id', 'jobId', 'clientId', 'description', 'amount', 'date', 'category', 'receiptFileId', 'receiptFileName', 'billed', 'createdAt', 'updatedAt']
 
 function rowToExpense(row: Record<string, string>): Expense {
   return {
     ...row,
     amount: parseFloat(row.amount) || 0,
+    billed: row.billed === 'true',
   } as unknown as Expense
 }
 
