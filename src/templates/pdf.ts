@@ -5,6 +5,11 @@ function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`
 }
 
+function computeShootDays(shootDates: string): number {
+  if (!shootDates) return 1
+  return shootDates.split(',').map((d) => d.trim()).filter(Boolean).length || 1
+}
+
 export function generateJobPDF(
   job: Job,
   items: JobItem[],
@@ -17,10 +22,15 @@ export function generateJobPDF(
   const pageWidth = doc.internal.pageSize.getWidth()
   let y = 20
 
-  // Business header
+  // Business header (left)
   doc.setFontSize(18)
   doc.setTextColor(30, 64, 175) // primary color
   doc.text(settings.businessName || 'CrewBooks', 14, y)
+
+  // "Invoice" label (right, same size as business name, black)
+  doc.setFontSize(18)
+  doc.setTextColor(0, 0, 0)
+  doc.text('Invoice', pageWidth - 14, y, { align: 'right' })
   y += 8
 
   doc.setFontSize(9)
@@ -30,11 +40,10 @@ export function generateJobPDF(
   if (settings.businessEmail) { doc.text(settings.businessEmail, 14, y); y += 4 }
   y += 6
 
-  // Invoice title
+  // Job # title
   doc.setFontSize(14)
   doc.setTextColor(0, 0, 0)
-  const isInvoice = job.status === 'invoiced' || job.status === 'paid'
-  doc.text(isInvoice ? `Invoice #${job.jobNumber}` : `Quote #${job.jobNumber}`, 14, y)
+  doc.text(`Job #${job.jobNumber}`, 14, y)
   y += 8
 
   // Client info
@@ -56,68 +65,96 @@ export function generateJobPDF(
   if (job.paymentTerms) { doc.text(`Payment Terms: ${job.paymentTerms}`, 14, y); y += 5 }
   y += 5
 
-  // Line items table header
-  doc.setFillColor(243, 244, 246)
-  doc.rect(14, y - 3, pageWidth - 28, 8, 'F')
-  doc.setFontSize(8)
-  doc.setTextColor(80, 80, 80)
-  doc.text('Description', 16, y + 2)
-  doc.text('Date', 90, y + 2)
-  doc.text('Qty', 115, y + 2)
-  doc.text('Rate', 135, y + 2)
-  doc.text('Amount', 160, y + 2)
-  y += 10
+  const shootDays = computeShootDays(job.shootDates)
 
-  // Group items by type
-  const grouped = new Map<string, JobItem[]>()
-  for (const item of items) {
-    if (!grouped.has(item.type)) grouped.set(item.type, [])
-    grouped.get(item.type)!.push(item)
-  }
-
-  doc.setFontSize(9)
-  doc.setTextColor(0, 0, 0)
-
-  for (const [type, typeItems] of grouped) {
-    // Type header
-    doc.setFontSize(9)
+  // --- Daily Rates section (Labor + Equipment) ---
+  const dailyItems = items.filter((i) => i.type === 'labor' || i.type === 'equipment')
+  if (dailyItems.length > 0) {
+    doc.setFontSize(10)
     doc.setTextColor(30, 64, 175)
-    doc.text(type.charAt(0).toUpperCase() + type.slice(1), 16, y)
-    y += 5
+    doc.text('Daily Rates', 14, y)
+    y += 6
 
+    // Table header
+    doc.setFillColor(243, 244, 246)
+    doc.rect(14, y - 3, pageWidth - 28, 8, 'F')
+    doc.setFontSize(8)
+    doc.setTextColor(80, 80, 80)
+    doc.text('Description', 16, y + 2)
+    doc.text('Qty', 115, y + 2)
+    doc.text('Rate', 140, y + 2)
+    doc.text('Amount', 170, y + 2)
+    y += 10
+
+    doc.setFontSize(9)
     doc.setTextColor(0, 0, 0)
-    for (const item of typeItems) {
+    for (const item of dailyItems) {
       if (y > 270) { doc.addPage(); y = 20 }
       const amount = item.quantity * item.rate
-      doc.text(item.description.substring(0, 40), 16, y)
-      doc.text(item.date || '', 90, y)
+      doc.text(item.description.substring(0, 50), 16, y)
       doc.text(String(item.quantity), 115, y)
-      doc.text(formatCurrency(item.rate), 135, y)
-      doc.text(formatCurrency(amount), 160, y)
+      doc.text(formatCurrency(item.rate), 140, y)
+      doc.text(formatCurrency(amount), 170, y)
       y += 5
     }
-    y += 3
+
+    // Daily subtotal
+    const dailySubtotal = dailyItems.reduce((sum, i) => sum + i.quantity * i.rate, 0)
+    y += 2
+    doc.setFontSize(9)
+    doc.setTextColor(80, 80, 80)
+    doc.text('Daily Subtotal:', 130, y)
+    doc.setTextColor(0, 0, 0)
+    doc.text(formatCurrency(dailySubtotal), 170, y)
+    y += 5
+
+    if (shootDays > 1) {
+      doc.setTextColor(80, 80, 80)
+      doc.text(`\u00D7 ${shootDays} days:`, 130, y)
+      doc.setTextColor(0, 0, 0)
+      doc.text(formatCurrency(dailySubtotal * shootDays), 170, y)
+      y += 5
+    }
+    y += 5
   }
 
-  // Expenses
-  if (expenses.length > 0) {
+  // --- Mileage & Expenses section ---
+  const mileageItems = items.filter((i) => i.type === 'mileage')
+  if (mileageItems.length > 0 || expenses.length > 0) {
     if (y > 250) { doc.addPage(); y = 20 }
-    doc.setFontSize(9)
+    doc.setFontSize(10)
     doc.setTextColor(30, 64, 175)
-    doc.text('Reimbursable Expenses', 16, y)
-    y += 5
+    doc.text('Mileage & Expenses', 14, y)
+    y += 6
+
+    doc.setFillColor(243, 244, 246)
+    doc.rect(14, y - 3, pageWidth - 28, 8, 'F')
+    doc.setFontSize(8)
+    doc.setTextColor(80, 80, 80)
+    doc.text('Description', 16, y + 2)
+    doc.text('Date', 120, y + 2)
+    doc.text('Amount', 170, y + 2)
+    y += 10
+
+    doc.setFontSize(9)
     doc.setTextColor(0, 0, 0)
+    for (const item of mileageItems) {
+      if (y > 270) { doc.addPage(); y = 20 }
+      doc.text(item.description.substring(0, 50), 16, y)
+      doc.text(formatCurrency(item.amount), 170, y)
+      y += 5
+    }
     for (const expense of expenses) {
       if (y > 270) { doc.addPage(); y = 20 }
       doc.text(expense.description.substring(0, 50), 16, y)
-      doc.text(expense.date || '', 90, y)
-      doc.text(formatCurrency(expense.amount), 160, y)
+      doc.text(expense.date || '', 120, y)
+      doc.text(formatCurrency(expense.amount), 170, y)
       y += 5
     }
-    y += 3
+    y += 5
   }
 
-  // Totals
+  // --- Totals ---
   if (y > 250) { doc.addPage(); y = 20 }
   const totalsX = 120
   doc.setDrawColor(200, 200, 200)
@@ -125,11 +162,12 @@ export function generateJobPDF(
   y += 5
 
   doc.setFontSize(9)
-  if (totals.laborSubtotal > 0) { doc.text('Labor:', totalsX, y); doc.text(formatCurrency(totals.laborSubtotal), 160, y); y += 5 }
-  if (totals.equipmentSubtotal > 0) { doc.text('Equipment:', totalsX, y); doc.text(formatCurrency(totals.equipmentSubtotal), 160, y); y += 5 }
-  if (totals.mileageSubtotal > 0) { doc.text('Mileage:', totalsX, y); doc.text(formatCurrency(totals.mileageSubtotal), 160, y); y += 5 }
-  if (totals.expensesSubtotal > 0) { doc.text('Expenses:', totalsX, y); doc.text(formatCurrency(totals.expensesSubtotal), 160, y); y += 5 }
-  if (totals.taxAmount > 0) { doc.text(`Tax (${job.taxRate}%):`, totalsX, y); doc.text(formatCurrency(totals.taxAmount), 160, y); y += 5 }
+  doc.setTextColor(0, 0, 0)
+  if (totals.laborSubtotal > 0) { doc.text('Labor:', totalsX, y); doc.text(formatCurrency(totals.laborSubtotal), 170, y); y += 5 }
+  if (totals.equipmentSubtotal > 0) { doc.text('Equipment:', totalsX, y); doc.text(formatCurrency(totals.equipmentSubtotal), 170, y); y += 5 }
+  if (totals.mileageSubtotal > 0) { doc.text('Mileage:', totalsX, y); doc.text(formatCurrency(totals.mileageSubtotal), 170, y); y += 5 }
+  if (totals.expensesSubtotal > 0) { doc.text('Expenses:', totalsX, y); doc.text(formatCurrency(totals.expensesSubtotal), 170, y); y += 5 }
+  if (totals.taxAmount > 0) { doc.text(`Tax (${job.taxRate}%):`, totalsX, y); doc.text(formatCurrency(totals.taxAmount), 170, y); y += 5 }
 
   doc.setDrawColor(0, 0, 0)
   doc.line(totalsX, y, pageWidth - 14, y)
@@ -137,7 +175,7 @@ export function generateJobPDF(
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
   doc.text('Total:', totalsX, y)
-  doc.text(formatCurrency(totals.total), 160, y)
+  doc.text(formatCurrency(totals.total), 170, y)
 
   // Notes
   if (job.notes) {

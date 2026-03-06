@@ -4,7 +4,7 @@ import { DropdownMenu } from '../ui/DropdownMenu'
 import { JobStatusBadge } from './JobStatusBadge'
 import { CommunicationsLog } from './CommunicationsLog'
 import { formatDate } from '../../utils/formatDate'
-import type { Job, JobItem, JobTotals, Communication } from '../../types'
+import type { Job, JobItem, JobTotals, Communication, Expense } from '../../types'
 
 interface PreferredAction {
   label: string
@@ -24,6 +24,7 @@ interface JobCardProps {
   clientName: string
   totals: JobTotals
   items: JobItem[]
+  expenses: Expense[]
   communications: Communication[]
   preferredAction: PreferredAction | null
   menuActions: MenuAction[]
@@ -34,7 +35,7 @@ function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`
 }
 
-export function JobCard({ job, clientName, totals, items, communications, preferredAction, menuActions }: JobCardProps) {
+export function JobCard({ job, clientName, totals, items, expenses, communications, preferredAction, menuActions }: JobCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [confirmAction, setConfirmAction] = useState<MenuAction | null>(null)
@@ -97,7 +98,7 @@ export function JobCard({ job, clientName, totals, items, communications, prefer
 
         {expanded && (
           <div className="mt-4 border-t pt-4 space-y-4">
-            {items.length > 0 && (
+            {(items.length > 0 || expenses.length > 0) && (
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Line Items</h3>
                 <div className="space-y-1">
@@ -105,6 +106,12 @@ export function JobCard({ job, clientName, totals, items, communications, prefer
                     <div key={item.id} className="flex items-center justify-between text-sm">
                       <span className="text-gray-700">{item.description}</span>
                       <span className="font-medium">{formatCurrency(item.amount)}</span>
+                    </div>
+                  ))}
+                  {expenses.map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{expense.description}</span>
+                      <span className="font-medium">{formatCurrency(expense.amount)}</span>
                     </div>
                   ))}
                 </div>

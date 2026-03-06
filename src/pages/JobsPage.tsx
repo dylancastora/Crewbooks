@@ -16,7 +16,7 @@ const statusFilters = ['All', JobStatus.Draft, JobStatus.Quoted, JobStatus.Appro
 export function JobsPage() {
   const navigate = useNavigate()
   const { clients } = useClients()
-  const { jobs, getPreferredAction, getMenuActions, totalsMap, getItemsForJob, getForJob } = useJobActions()
+  const { jobs, getPreferredAction, getMenuActions, totalsMap, allExpenses, getItemsForJob, getForJob } = useJobActions()
   const { loading: itemsLoading } = useJobItems()
   const { loading: commsLoading } = useCommunications()
   const [filter, setFilter] = useState<string>('All')
@@ -59,6 +59,7 @@ export function JobsPage() {
               clientName={getClientName(job.clientId)}
               totals={totalsMap.get(job.id) || { laborSubtotal: 0, equipmentSubtotal: 0, mileageSubtotal: 0, customSubtotal: 0, expensesSubtotal: 0, taxableSubtotal: 0, taxAmount: 0, total: 0 }}
               items={getItemsForJob(job.id)}
+              expenses={allExpenses.filter((e) => e.jobId === job.id)}
               communications={getForJob(job.id)}
               preferredAction={getPreferredAction(job)}
               menuActions={getMenuActions(job, () => navigate(`/jobs/${job.id}`))}

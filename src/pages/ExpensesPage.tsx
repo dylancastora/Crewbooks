@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useExpenses } from '../hooks/useExpenses'
 import { useClients } from '../hooks/useClients'
+import { useJobs } from '../hooks/useJobs'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -71,8 +73,10 @@ function ReceiptThumbnail({ fileId }: { fileId: string }) {
 }
 
 export function ExpensesPage() {
+  const navigate = useNavigate()
   const { expenses, loading, createExpense, updateExpense, deleteExpense } = useExpenses()
   const { clients } = useClients()
+  const { jobs } = useJobs()
   const [showModal, setShowModal] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [form, setForm] = useState(emptyExpense)
@@ -155,7 +159,12 @@ export function ExpensesPage() {
                 onClick={() => setExpandedId(expandedId === expense.id ? null : expense.id)}
               >
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium">{expense.description}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">{expense.description}</h3>
+                    {expense.billed && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Billed</span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500">
                     {formatDate(expense.date)} · {expense.category}
                   </p>
@@ -175,7 +184,21 @@ export function ExpensesPage() {
               {expandedId === expense.id && (
                 <div className="mt-3 pt-3 border-t text-sm text-gray-600 space-y-1">
                   {expense.clientId && <p><span className="text-gray-400">Client:</span> {getClientName(expense.clientId)}</p>}
-                  {expense.billed && <p><span className="text-gray-400">Status:</span> Billed to job</p>}
+                  {expense.billed && expense.jobId && (() => {
+                    const job = jobs.find((j) => j.id === expense.jobId)
+                    return job ? (
+                      <p>
+                        <span className="text-gray-400">Attached to: </span>
+                        <button
+                          type="button"
+                          className="text-primary hover:underline font-medium"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job.id}`) }}
+                        >
+                          Job #{job.jobNumber}
+                        </button>
+                      </p>
+                    ) : null
+                  })()}
                   {expense.receiptFileName && <p><span className="text-gray-400">Receipt:</span> {expense.receiptFileName}</p>}
                   {expense.receiptFileId && <ReceiptThumbnail fileId={expense.receiptFileId} />}
                 </div>

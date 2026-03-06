@@ -291,6 +291,6 @@ export function useJobActions(onComplete?: () => void) {
     sendQuote, sendInvoice, approveQuote, revokeApproval, markPaid, markUnpaid,
     cancelJob, uncancelJob, deleteJob: deleteJobAction,
     getPreferredAction, getMenuActions, getTotalsForJob, totalsMap,
-    jobs, allItems, getItemsForJob, getForJob,
+    jobs, allItems, allExpenses, getItemsForJob, getForJob,
   }
 }

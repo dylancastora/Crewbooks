@@ -56,12 +56,6 @@ export function JobSummary({ items, taxRate, shootDays, expensesSubtotal = 0 }: 
             <span>${customDaily.toFixed(2)}</span>
           </div>
         )}
-        {mileageSubtotal > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Mileage</span>
-            <span>${mileageSubtotal.toFixed(2)}</span>
-          </div>
-        )}
       </div>
 
       {dailySubtotal > 0 && (
@@ -80,6 +74,12 @@ export function JobSummary({ items, taxRate, shootDays, expensesSubtotal = 0 }: 
       )}
 
       <div className="border-t pt-2 mt-2 space-y-1">
+        {mileageSubtotal > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Mileage</span>
+            <span>${mileageSubtotal.toFixed(2)}</span>
+          </div>
+        )}
         {expensesSubtotal > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Expenses</span>

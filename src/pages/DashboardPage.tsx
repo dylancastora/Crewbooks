@@ -17,7 +17,7 @@ export function DashboardPage() {
   const { clients } = useClients()
   const [activeTab, setActiveTab] = useState<Tab>('upcoming')
 
-  const { jobs, getPreferredAction, getMenuActions, totalsMap, getItemsForJob, getForJob } = useJobActions()
+  const { jobs, getPreferredAction, getMenuActions, totalsMap, allExpenses, getItemsForJob, getForJob } = useJobActions()
   const { loading: itemsLoading } = useJobItems()
   const { loading: commsLoading } = useCommunications()
   const { loading: jobsLoading } = useJobs()
@@ -120,6 +120,7 @@ export function DashboardPage() {
               clientName={getClientName(job.clientId)}
               totals={totalsMap.get(job.id) || { laborSubtotal: 0, equipmentSubtotal: 0, mileageSubtotal: 0, customSubtotal: 0, expensesSubtotal: 0, taxableSubtotal: 0, taxAmount: 0, total: 0 }}
               items={getItemsForJob(job.id)}
+              expenses={allExpenses.filter((e) => e.jobId === job.id)}
               communications={getForJob(job.id)}
               preferredAction={getPreferredAction(job)}
               menuActions={getMenuActions(job, () => navigate(`/jobs/${job.id}`))}
