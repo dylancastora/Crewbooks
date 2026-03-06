@@ -37,15 +37,13 @@ export function JobDetailPage() {
   const isNew = id === 'new'
   const existingJob = jobs.find((j) => j.id === id)
 
-  const defaultJobNumber = padJobNumber(generateJobNumber(jobs, settings))
-
   const [formData, setFormData] = useState({
     clientId: '',
     contactIds: '',
     shootDates: '',
     paymentTerms: settings.defaultPaymentTerms || 'Net 30',
     notes: '',
-    jobNumber: defaultJobNumber,
+    jobNumber: '',
   })
 
   const [items, setItems] = useState<PartialItem[]>([])
@@ -56,6 +54,16 @@ export function JobDetailPage() {
   const shootDays = formData.shootDates
     ? formData.shootDates.split(',').map((d) => d.trim()).filter(Boolean).length
     : 0
+
+  // Set job number for new jobs once jobs list has loaded
+  useEffect(() => {
+    if (!isNew) return
+    setFormData((prev) => ({
+      ...prev,
+      jobNumber: padJobNumber(generateJobNumber(jobs, settings)),
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, jobs, settings])
 
   // Load existing job data
   useEffect(() => {
