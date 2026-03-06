@@ -1,4 +1,4 @@
-import { getRows, updateRow, appendRow } from '../google/sheets'
+import { getRows, updateRowByKey, appendRow } from '../google/sheets'
 import type { Settings } from '../../types'
 
 export async function getSettings(spreadsheetId: string, token: string): Promise<Settings> {
@@ -18,9 +18,9 @@ export async function updateSetting(
   token: string,
 ): Promise<void> {
   const { rows } = await getRows(spreadsheetId, 'Settings', token)
-  const idx = rows.findIndex((r) => r.key === key)
-  if (idx >= 0) {
-    await updateRow(spreadsheetId, 'Settings', idx + 2, [key, value], token) // +2 for header + 1-indexed
+  const exists = rows.some((r) => r.key === key)
+  if (exists) {
+    await updateRowByKey(spreadsheetId, 'Settings', key, [key, value], token)
   } else {
     await appendRow(spreadsheetId, 'Settings', [key, value], token)
   }

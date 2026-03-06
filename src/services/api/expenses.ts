@@ -1,4 +1,4 @@
-import { getRows, appendRow, updateRow, deleteRow } from '../google/sheets'
+import { getRows, appendRow, updateRowById, deleteRowById } from '../google/sheets'
 import type { Expense } from '../../types'
 
 function generateId(): string {
@@ -50,13 +50,10 @@ export async function updateExpense(
   expense: Expense,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, 'Expenses', token)
-  const idx = rows.findIndex((r) => r.id === expense.id)
-  if (idx < 0) throw new Error('Expense not found')
   expense.updatedAt = now()
   const obj = expense as unknown as Record<string, unknown>
   const row = EXPENSE_HEADERS.map((h) => String(obj[h] ?? ''))
-  await updateRow(spreadsheetId, 'Expenses', idx + 2, row, token)
+  await updateRowById(spreadsheetId, 'Expenses', expense.id, row, token)
 }
 
 export async function deleteExpense(
@@ -64,8 +61,5 @@ export async function deleteExpense(
   expenseId: string,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, 'Expenses', token)
-  const idx = rows.findIndex((r) => r.id === expenseId)
-  if (idx < 0) throw new Error('Expense not found')
-  await deleteRow(spreadsheetId, 'Expenses', idx + 1, token)
+  await deleteRowById(spreadsheetId, 'Expenses', expenseId, token)
 }

@@ -1,4 +1,4 @@
-import { getRows, appendRow, updateRow, deleteRow, batchGet } from '../google/sheets'
+import { appendRow, updateRowById, deleteRowById, batchGet } from '../google/sheets'
 import type { Client, Contact } from '../../types'
 
 function generateId(): string {
@@ -71,13 +71,10 @@ export async function updateClient(
   client: Client,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, 'Clients', token)
-  const idx = rows.findIndex((r) => r.id === client.id)
-  if (idx < 0) throw new Error('Client not found')
   client.updatedAt = now()
   const obj = client as unknown as Record<string, unknown>
   const row = CLIENT_HEADERS.map((h) => String(obj[h] ?? ''))
-  await updateRow(spreadsheetId, 'Clients', idx + 2, row, token)
+  await updateRowById(spreadsheetId, 'Clients', client.id, row, token)
 }
 
 export async function deleteClient(
@@ -85,10 +82,7 @@ export async function deleteClient(
   clientId: string,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, 'Clients', token)
-  const idx = rows.findIndex((r) => r.id === clientId)
-  if (idx < 0) throw new Error('Client not found')
-  await deleteRow(spreadsheetId, 'Clients', idx + 1, token) // +1 for header
+  await deleteRowById(spreadsheetId, 'Clients', clientId, token)
 }
 
 export async function createContact(
@@ -113,13 +107,10 @@ export async function updateContact(
   contact: Contact,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, 'Contacts', token)
-  const idx = rows.findIndex((r) => r.id === contact.id)
-  if (idx < 0) throw new Error('Contact not found')
   contact.updatedAt = now()
   const obj = contact as unknown as Record<string, unknown>
   const row = CONTACT_HEADERS.map((h) => String(obj[h] ?? ''))
-  await updateRow(spreadsheetId, 'Contacts', idx + 2, row, token)
+  await updateRowById(spreadsheetId, 'Contacts', contact.id, row, token)
 }
 
 export async function deleteContact(
@@ -127,9 +118,6 @@ export async function deleteContact(
   contactId: string,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, 'Contacts', token)
-  const idx = rows.findIndex((r) => r.id === contactId)
-  if (idx < 0) throw new Error('Contact not found')
-  await deleteRow(spreadsheetId, 'Contacts', idx + 1, token)
+  await deleteRowById(spreadsheetId, 'Contacts', contactId, token)
 }
 

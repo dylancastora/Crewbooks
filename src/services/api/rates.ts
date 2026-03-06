@@ -1,4 +1,4 @@
-import { getRows, appendRow, updateRow, deleteRow } from '../google/sheets'
+import { getRows, appendRow, updateRowById, deleteRowById } from '../google/sheets'
 import type { LaborRate, EquipmentRate } from '../../types'
 
 type RateType = 'Labor' | 'Equipment'
@@ -55,12 +55,9 @@ export async function updateRate(
   rate: Rate,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, type, token)
-  const idx = rows.findIndex((r) => r.id === rate.id)
-  if (idx < 0) throw new Error('Rate not found')
   rate.updatedAt = now()
   const row = RATE_HEADERS.map((h) => String((rate as unknown as Record<string, unknown>)[h] ?? ''))
-  await updateRow(spreadsheetId, type, idx + 2, row, token)
+  await updateRowById(spreadsheetId, type, rate.id, row, token)
 }
 
 export async function deleteRate(
@@ -69,8 +66,5 @@ export async function deleteRate(
   rateId: string,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, type, token)
-  const idx = rows.findIndex((r) => r.id === rateId)
-  if (idx < 0) throw new Error('Rate not found')
-  await deleteRow(spreadsheetId, type, idx + 1, token)
+  await deleteRowById(spreadsheetId, type, rateId, token)
 }

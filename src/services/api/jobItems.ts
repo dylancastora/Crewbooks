@@ -70,7 +70,7 @@ export async function setJobItems(
     jobId,
     jobNumber,
     sortOrder: idx,
-    amount: item.quantity * item.rate,
+    amount: item.amount,
   } as JobItem))
 
   for (const item of newItems) {

@@ -108,11 +108,12 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
   }
 
   const tabItems = items.map((item, idx) => ({ item, idx })).filter(({ item }) => item.type === activeTab)
-  const activeRates = activeTab === ItemType.Labor
+  const activeRates = (activeTab === ItemType.Labor
     ? laborRates.filter((r) => r.isActive)
     : activeTab === ItemType.Equipment
       ? equipmentRates.filter((r) => r.isActive)
       : []
+  ).filter((rate) => !items.some((item) => item.description === rate.name && item.type === activeTab))
 
   const calcLineTotal = (item: PartialItem) => {
     if (item.type === ItemType.Mileage) return item.quantity * item.rate
@@ -223,12 +224,12 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
           ) : activeTab === ItemType.Custom ? (
             <Button size="sm" variant="secondary" onClick={addCustom}>+ Add Custom Item</Button>
           ) : (
-            <Button size="sm" variant="secondary" onClick={openNewInlineRate}>+ Add {activeTab} Item</Button>
+            <Button size="sm" variant="secondary" onClick={openNewInlineRate}>+ New {activeTab === 'labor' ? 'Labor' : 'Equipment'} Rate</Button>
           )}
         </div>
       )}
 
-      <Modal open={showNewRateModal} onClose={() => setShowNewRateModal(false)} title={`New ${activeTab === ItemType.Labor ? 'Labor' : 'Equipment'} Item`}>
+      <Modal open={showNewRateModal} onClose={() => setShowNewRateModal(false)} title={`New ${activeTab === ItemType.Labor ? 'Labor' : 'Equipment'} Rate`}>
         <div className="space-y-3">
           <Input label="Name / Description" value={newRateForm.name} onChange={(e) => setNewRateForm({ ...newRateForm, name: e.target.value })} autoComplete="off" />
           <Input label="Day Rate ($)" type="number" step="0.01" value={newRateForm.rate || ''} onChange={(e) => setNewRateForm({ ...newRateForm, rate: parseFloat(e.target.value) || 0 })} autoComplete="off" />

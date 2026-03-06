@@ -5,16 +5,12 @@ import { useJobs } from '../hooks/useJobs'
 import { useClients } from '../hooks/useClients'
 import { useRates } from '../hooks/useRates'
 import { useSettings } from '../hooks/useSettings'
-import { useJobActions } from '../hooks/useJobActions'
-import { useCommunications } from '../hooks/useCommunications'
 import { getJobItems, setJobItems } from '../services/api/jobItems'
 import { generateJobNumber } from '../services/api/jobs'
 import { JobStatus, Unit } from '../types'
 import { JobForm } from '../components/jobs/JobForm'
 import { LineItemEditor } from '../components/jobs/LineItemEditor'
 import { JobSummary } from '../components/jobs/JobSummary'
-import { JobActions } from '../components/jobs/JobActions'
-import { CommunicationsLog } from '../components/jobs/CommunicationsLog'
 import { Spinner } from '../components/ui/Spinner'
 import { useToast } from '../components/ui/Toast'
 import type { Job, JobItem } from '../types'
@@ -31,12 +27,10 @@ export function JobDetailPage() {
   const navigate = useNavigate()
   const { spreadsheetId, getToken } = useAuth()
   const { jobs, createJob, updateJob } = useJobs()
-  const { clients, contacts } = useClients()
+  const { clients, contacts, createClient, createContact } = useClients()
   const { labor, equipment, createRate } = useRates()
   const { settings } = useSettings()
   const { showToast } = useToast()
-  const { getPreferredAction, getMenuActions, getForJob } = useJobActions(() => navigate('/', { replace: true }))
-  useCommunications()
 
   const isNew = id === 'new'
   const existingJob = jobs.find((j) => j.id === id)
@@ -159,7 +153,7 @@ export function JobDetailPage() {
       const saved = await saveJob()
       if (saved) {
         showToast(isNew ? `Job #${saved.jobNumber} created` : `Job #${saved.jobNumber} saved`)
-        navigate('/', { replace: true })
+        navigate('/jobs', { replace: true })
       }
     } finally {
       setSaving(false)
@@ -171,10 +165,6 @@ export function JobDetailPage() {
   if (!isNew && !existingJob) return <Spinner className="py-12" />
   if (loadingItems) return <Spinner className="py-12" />
 
-  const jobComms = existingJob ? getForJob(existingJob.id) : []
-  const preferredAction = existingJob ? getPreferredAction(existingJob) : null
-  const menuActions = existingJob ? getMenuActions(existingJob) : []
-
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -185,7 +175,14 @@ export function JobDetailPage() {
       </div>
 
       <div className="space-y-6">
-        <JobForm data={formData} onChange={setFormData} clients={clients} contacts={contacts} />
+        <JobForm
+          data={formData}
+          onChange={setFormData}
+          clients={clients}
+          contacts={contacts}
+          createClient={createClient}
+          createContact={createContact}
+        />
 
         <div>
           <h2 className="text-lg font-semibold mb-1">Line Items</h2>
@@ -206,27 +203,13 @@ export function JobDetailPage() {
 
         <JobSummary items={items} taxRate={0} shootDays={shootDays || 1} />
 
-        {jobComms.length > 0 && (
-          <CommunicationsLog communications={jobComms} />
-        )}
-
-        {existingJob ? (
-          <JobActions
-            job={existingJob}
-            preferredAction={preferredAction}
-            menuActions={menuActions}
-            onSave={handleSave}
-            saving={saving}
-          />
-        ) : (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full bg-primary text-white rounded-lg py-3 font-medium min-h-[44px] hover:bg-primary-dark disabled:opacity-50"
-          >
-            {saving ? 'Creating...' : 'Create Job'}
-          </button>
-        )}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full bg-primary text-white rounded-lg py-3 font-medium min-h-[44px] hover:bg-primary-dark disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : isNew ? 'Create Job' : 'Save Job'}
+        </button>
       </div>
     </div>
   )

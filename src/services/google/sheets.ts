@@ -29,7 +29,6 @@ export async function getRows(
   const headers = values[0]
   const rows = values.slice(1)
     .map((row) => rowToObject(headers, row))
-    .filter((row) => row.id && row.id.trim() !== '')
   return { headers, rows }
 }
 
@@ -69,6 +68,66 @@ export async function updateRow(
   if (!res.ok) throw new Error(`Failed to update row in ${tab}: ${res.statusText}`)
 }
 
+async function findRowIndexByColumn(
+  spreadsheetId: string,
+  tab: string,
+  columnIndex: number,
+  value: string,
+  token: string,
+): Promise<number> {
+  const res = await fetch(`${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(tab)}`, {
+    headers: authHeaders(token),
+  })
+  if (!res.ok) throw new Error(`Failed to get rows from ${tab}: ${res.statusText}`)
+  const data = await res.json()
+  const values: string[][] = data.values || []
+  // Search from row 1 onward (row 0 is header)
+  for (let i = 1; i < values.length; i++) {
+    if ((values[i][columnIndex] || '') === value) return i + 1 // 1-indexed sheet row
+  }
+  throw new Error(`Row with value "${value}" not found in ${tab}`)
+}
+
+export async function updateRowById(
+  spreadsheetId: string,
+  tab: string,
+  idValue: string,
+  rowData: string[],
+  token: string,
+): Promise<void> {
+  const sheetRow = await findRowIndexByColumn(spreadsheetId, tab, 0, idValue, token)
+  const range = `${tab}!A${sheetRow}`
+  const res = await fetch(
+    `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
+    {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ values: [rowData] }),
+    },
+  )
+  if (!res.ok) throw new Error(`Failed to update row in ${tab}: ${res.statusText}`)
+}
+
+export async function updateRowByKey(
+  spreadsheetId: string,
+  tab: string,
+  keyValue: string,
+  rowData: string[],
+  token: string,
+): Promise<void> {
+  const sheetRow = await findRowIndexByColumn(spreadsheetId, tab, 0, keyValue, token)
+  const range = `${tab}!A${sheetRow}`
+  const res = await fetch(
+    `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
+    {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ values: [rowData] }),
+    },
+  )
+  if (!res.ok) throw new Error(`Failed to update row in ${tab}: ${res.statusText}`)
+}
+
 export async function deleteRow(
   spreadsheetId: string,
   tab: string,
@@ -96,6 +155,33 @@ export async function deleteRow(
             dimension: 'ROWS',
             startIndex: rowIndex, // 0-indexed, but rowIndex already accounts for header
             endIndex: rowIndex + 1,
+          },
+        },
+      }],
+    }),
+  })
+  if (!res.ok) throw new Error(`Failed to delete row in ${tab}: ${res.statusText}`)
+}
+
+export async function deleteRowById(
+  spreadsheetId: string,
+  tab: string,
+  idValue: string,
+  token: string,
+): Promise<void> {
+  const sheetRow = await findRowIndexByColumn(spreadsheetId, tab, 0, idValue, token)
+  const sheetId = await getSheetId(spreadsheetId, tab, token)
+  const res = await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      requests: [{
+        deleteDimension: {
+          range: {
+            sheetId,
+            dimension: 'ROWS',
+            startIndex: sheetRow - 1, // convert 1-indexed to 0-indexed
+            endIndex: sheetRow,
           },
         },
       }],

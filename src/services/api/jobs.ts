@@ -1,4 +1,4 @@
-import { getRows, appendRow, updateRow, getSheetId } from '../google/sheets'
+import { getRows, appendRow, updateRowById, getSheetId } from '../google/sheets'
 import { JobStatus } from '../../types'
 import type { Job, JobItem, Expense, JobTotals, Settings } from '../../types'
 
@@ -68,13 +68,10 @@ export async function updateJob(
   job: Job,
   token: string,
 ): Promise<void> {
-  const { rows } = await getRows(spreadsheetId, 'Jobs', token)
-  const idx = rows.findIndex((r) => r.id === job.id)
-  if (idx < 0) throw new Error('Job not found')
   job.updatedAt = now()
   const obj = job as unknown as Record<string, unknown>
   const row = JOB_HEADERS.map((h) => String(obj[h] ?? ''))
-  await updateRow(spreadsheetId, 'Jobs', idx + 2, row, token)
+  await updateRowById(spreadsheetId, 'Jobs', job.id, row, token)
 }
 
 export async function deleteJob(

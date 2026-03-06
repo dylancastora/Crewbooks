@@ -5,6 +5,7 @@ import { useJobItems } from '../hooks/useJobItems'
 import { useCommunications } from '../hooks/useCommunications'
 import { useJobActions } from '../hooks/useJobActions'
 import { Button } from '../components/ui/Button'
+import { Select } from '../components/ui/Select'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState } from '../components/ui/EmptyState'
 import { JobCard } from '../components/jobs/JobCard'
@@ -39,16 +40,12 @@ export function JobsPage() {
         <Button onClick={() => navigate('/jobs/new')} size="sm">+ New Job</Button>
       </div>
 
-      <div className="flex flex-wrap gap-1 mb-4">
-        {statusFilters.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap min-h-[32px] transition-colors capitalize ${filter === s ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-4">
+        <Select
+          value={filter}
+          options={statusFilters.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
+          onChange={(e) => setFilter(e.target.value)}
+        />
       </div>
 
       {filteredJobs.length === 0 ? (
