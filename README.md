@@ -1,73 +1,182 @@
-# React + TypeScript + Vite
+# Crewbooks
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A lightweight operations manager for film industry freelancers. Track clients, jobs, expenses, rates, quotes, and invoices — all stored in your own Google Workspace.
 
-Currently, two official plugins are available:
+No subscription, no backend, no database to manage. Your data lives in Google Sheets, Drive, and Gmail.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Free hosted version at Crewbooks.io
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- **Jobs** — Create and track jobs through a full lifecycle: Draft → Quoted → Approved → Invoiced → Paid
+- **Line items** — Add labor, equipment, mileage, and reimbursable expenses
+- **Expenses** — Log expenses per job with receipt photo uploads, linked to invoices
+- **Clients & contacts** — Manage client companies and individual contacts for quote/invoice delivery
+- **Rates** — Save reusable labor and equipment rate templates
+- **Quotes & invoices** — Generate HTML email quotes and PDF invoices, sent via Gmail with receipts attached
+- **Dashboard** — See earnings, receivables, and pipeline at a glance
+- **Settings** — Configure your business name, address, mileage rate, payment terms, and invoice numbering
+- **PWA** — Install as a standalone app on desktop or mobile
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## How It Works
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Crewbooks runs entirely in the browser. After signing in with Google, it creates a spreadsheet ("CrewBooks Database") and a folder ("CrewBooks") in your Google Drive. All data is read from and written to that spreadsheet. Receipt photos are stored in your Drive. Quotes and invoices are sent from your Gmail.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+No data ever touches a third-party server.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | React 19 + TypeScript |
+| Build | Vite |
+| Styling | Tailwind CSS v4 |
+| Routing | React Router v7 |
+| Database | Google Sheets API v4 |
+| File storage | Google Drive API v3 |
+| Email delivery | Gmail API v1 |
+| Auth | Google OAuth 2.0 |
+| PDF generation | jsPDF |
+| PWA | vite-plugin-pwa |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- A Google account
+- A Google Cloud project with the following APIs enabled:
+  - Google Sheets API
+  - Google Drive API
+  - Gmail API
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/your-username/crewbooks.git
+cd crewbooks
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Configure Google OAuth
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+In your [Google Cloud Console](https://console.cloud.google.com):
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Create (or select) a project
+2. Enable the Sheets, Drive, and Gmail APIs
+3. Create an **OAuth 2.0 Client ID** (Web application type)
+4. Add your development origin to **Authorized JavaScript origins** (e.g. `http://localhost:5173`)
+5. Add your production domain as well when deploying
+
+### 3. Set up environment variables
+
+```bash
+cp .env.example .env
 ```
+
+Edit `.env`:
+
+```
+VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+VITE_SUPPORT_EMAIL=your-email@example.com
+```
+
+### 4. Run locally
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) and sign in with Google. On first login, Crewbooks will automatically create the spreadsheet and Drive folder in your account.
+
+---
+
+## Development
+
+```bash
+npm run dev       # Start dev server
+npm run build     # Type-check and build for production
+npm run preview   # Preview production build locally
+npm run lint      # Run ESLint
+```
+
+---
+
+## Deployment
+
+Build the app and serve the `dist/` folder from any static host (Vercel, Netlify, GitHub Pages, etc.).
+
+```bash
+npm run build
+```
+
+Make sure to add your production domain to the **Authorized JavaScript origins** in your Google Cloud OAuth client settings.
+
+---
+
+## Project Structure
+
+```
+src/
+├── pages/          # Route-level components (Dashboard, Jobs, Clients, etc.)
+├── components/     # Reusable UI and feature components
+├── services/
+│   ├── google/     # Sheets, Drive, Gmail, and Auth API wrappers
+│   └── api/        # Business logic (jobs, clients, expenses, etc.)
+├── hooks/          # Data-fetching and action hooks
+├── context/        # Auth context
+├── templates/      # HTML email and PDF invoice generators
+├── types/          # TypeScript interfaces
+└── utils/          # Date formatting, sanitization
+```
+
+---
+
+## Data Model
+
+All data is stored in tabs within a single Google Sheets spreadsheet:
+
+| Sheet tab | Contents |
+|---|---|
+| Jobs | Job headers, status, shoot dates, job numbers |
+| JobItems | Line items (labor, equipment, mileage, custom) |
+| Clients | Company name, address, contact info |
+| Contacts | Individual contacts linked to clients |
+| Labor | Reusable labor rate templates |
+| Equipment | Reusable equipment rate templates |
+| Expenses | Expenses linked to jobs, with Drive file IDs for receipts |
+| Communications | History of quotes and invoices sent |
+| Settings | Key-value store for business settings |
+
+---
+
+## Privacy
+
+Crewbooks requests the following Google OAuth scopes:
+
+- `userinfo.profile` / `userinfo.email` — display your name and email
+- `spreadsheets` — read/write your CrewBooks spreadsheet
+- `drive.file` — upload receipt photos (only files created by this app)
+- `gmail.send` — send quotes and invoices from your Gmail account
+
+Access tokens are stored in memory only and are never sent to any external server.
+
+---
+
+## Contributing
+
+Pull requests are welcome. For significant changes, please open an issue first to discuss what you'd like to change.
+
+---
+
+## License
+
+AGPL-3.0
