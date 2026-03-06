@@ -180,3 +180,6 @@ Pull requests are welcome. For significant changes, please open an issue first t
 ## License
 
 AGPL-3.0
+
+Crewbooks is free and open source. The hosted version at Crewbooks.io is currently free to use. Voluntary contributions help sustain development — if the project grows, a nominal hosting fee may be introduced in the future. Self-hosting will always be free.
+
