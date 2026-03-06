@@ -12,7 +12,7 @@ export function LoginPage() {
       await signIn()
       navigate('/')
     } catch (err) {
-      console.error('Sign in failed:', err)
+      console.error('Sign in failed:', err instanceof Error ? err.message : 'Unknown error')
     }
   }
 
@@ -34,14 +34,25 @@ export function LoginPage() {
             </Button>
         )}
         </div>
-      <div className="mt-8">
-        <p className="text-gray-500 mt-auto">Created by&nbsp;
+      <div className="mt-8 text-center">
+        <p className="text-gray-500">Created by&nbsp;
           <a
-            href="https://dylancastora.com"
-            className="text-primary underline"
+            href="https://www.imdb.com/name/nm13328053/"
+            className="text-primary hover:underline"
             target="_blank" rel="noopener noreferrer"
           >Dylan Castora</a>
         , Sound Mixer</p>
+        <a
+          href="mailto:dylancastora@gmail.com"
+          className=" text-primary hover:underline mt-2 inline-block"
+          target="_blank" rel="noopener noreferrer"
+        >Book me for a shoot</a>
+        <br />
+        <a
+          href="https://ko-fi.com/dylancastora"
+          className=" text-primary hover:underline mt-2 inline-block"
+          target="_blank" rel="noopener noreferrer"
+        >Support Crewbooks</a>
       </div>
     </div>
   )

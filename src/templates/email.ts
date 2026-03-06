@@ -1,4 +1,5 @@
 import type { Job, JobItem, Expense, Client, Contact, Settings, JobTotals } from '../types'
+import { escapeHtml } from '../utils/sanitize'
 
 function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`
@@ -32,8 +33,8 @@ function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], tot
         <tbody>
           ${dailyItems.map((item) => `
             <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.description}</td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(item.description)}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${escapeHtml(String(item.quantity))}</td>
               <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.rate)}</td>
               <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.quantity * item.rate)}</td>
             </tr>
@@ -46,7 +47,7 @@ function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], tot
     html += `
       <table style="width: 250px; margin-left: auto;">
         <tr><td style="padding: 4px;">Daily Subtotal</td><td style="text-align: right; padding: 4px;">${formatCurrency(dailySubtotal)}</td></tr>
-        ${shootDays > 1 ? `<tr><td style="padding: 4px; color: #666;">&times; ${shootDays} days</td><td style="text-align: right; padding: 4px; color: #666;">${formatCurrency(dailySubtotal * shootDays)}</td></tr>` : ''}
+        ${shootDays > 1 ? `<tr><td style="padding: 4px; color: #666;">&times; ${escapeHtml(String(shootDays))} days</td><td style="text-align: right; padding: 4px; color: #666;">${formatCurrency(dailySubtotal * shootDays)}</td></tr>` : ''}
       </table>
     `
   }
@@ -66,15 +67,15 @@ function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], tot
         <tbody>
           ${mileageItems.map((item) => `
             <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.description}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(item.description)}</td>
               <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;"></td>
               <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.amount)}</td>
             </tr>
           `).join('')}
           ${expenses.map((e) => `
             <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #eee;">${e.description}</td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${e.date}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(e.description)}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${escapeHtml(e.date)}</td>
               <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(e.amount)}</td>
             </tr>
           `).join('')}
@@ -87,10 +88,10 @@ function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], tot
   html += `
     <table style="width: 250px; margin-left: auto; margin-top: 20px;">
       ${totals.laborSubtotal > 0 ? `<tr><td style="padding: 4px;">Labor</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.laborSubtotal)}</td></tr>` : ''}
-      ${totals.equipmentSubtotal > 0 ? `<tr><td style="padding: 4px;">Equipment</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.equipmentSubtotal)}</td></tr>` : ''}
+      ${totals.equipmentSubtotal > 0 ? `<tr><td style="padding: 4px;">Gear</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.equipmentSubtotal)}</td></tr>` : ''}
       ${totals.mileageSubtotal > 0 ? `<tr><td style="padding: 4px;">Mileage</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.mileageSubtotal)}</td></tr>` : ''}
       ${totals.expensesSubtotal > 0 ? `<tr><td style="padding: 4px;">Expenses</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.expensesSubtotal)}</td></tr>` : ''}
-      ${totals.taxAmount > 0 ? `<tr><td style="padding: 4px;">Tax (${job.taxRate}%)</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.taxAmount)}</td></tr>` : ''}
+      ${totals.taxAmount > 0 ? `<tr><td style="padding: 4px;">Tax (${escapeHtml(String(job.taxRate))}%)</td><td style="text-align: right; padding: 4px;">${formatCurrency(totals.taxAmount)}</td></tr>` : ''}
       <tr style="font-weight: bold; font-size: 1.1em;">
         <td style="padding: 8px 4px; border-top: 2px solid #333;">Total</td>
         <td style="text-align: right; padding: 8px 4px; border-top: 2px solid #333;">${formatCurrency(totals.total)}</td>
@@ -114,20 +115,20 @@ export function generateQuoteHtml(
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #1e40af;">Quote #${job.jobNumber}</h2>
-      <p>Hi ${recipientName},</p>
-      <p>Please find the quote details below for <strong>${job.title || `Job #${job.jobNumber}`}</strong>.</p>
-      ${job.shootDates ? `<p><strong>Shoot Dates:</strong> ${job.shootDates}</p>` : ''}
+      <h2 style="color: #1e40af;">Quote #${escapeHtml(job.jobNumber)}</h2>
+      <p>Hi ${escapeHtml(recipientName)},</p>
+      <p>Please find the quote details below for <strong>${escapeHtml(job.title || `Job #${job.jobNumber}`)}</strong>.</p>
+      ${job.shootDates ? `<p><strong>Shoot Dates:</strong> ${escapeHtml(job.shootDates)}</p>` : ''}
 
       ${buildLineItemsHtml(job, items, expenses, totals)}
 
-      ${job.notes ? `<p style="margin-top: 20px; color: #666;"><strong>Notes:</strong> ${job.notes}</p>` : ''}
+      ${job.notes ? `<p style="margin-top: 20px; color: #666;"><strong>Notes:</strong> ${escapeHtml(job.notes)}</p>` : ''}
 
       <p style="margin-top: 30px;">
         Best regards,<br/>
-        ${settings.businessName || ''}<br/>
-        ${settings.businessPhone ? settings.businessPhone + '<br/>' : ''}
-        ${settings.businessEmail || ''}
+        ${escapeHtml(settings.businessName || '')}<br/>
+        ${settings.businessPhone ? escapeHtml(settings.businessPhone) + '<br/>' : ''}
+        ${escapeHtml(settings.businessEmail || '')}
       </p>
     </div>
   `
@@ -146,22 +147,22 @@ export function generateInvoiceHtml(
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #1e40af;">Invoice #${job.jobNumber}</h2>
-      <p>Hi ${recipientName},</p>
-      <p>Please find the invoice details below for <strong>${job.title || `Job #${job.jobNumber}`}</strong>.</p>
-      ${job.shootDates ? `<p><strong>Shoot Dates:</strong> ${job.shootDates}</p>` : ''}
+      <h2 style="color: #1e40af;">Invoice #${escapeHtml(job.jobNumber)}</h2>
+      <p>Hi ${escapeHtml(recipientName)},</p>
+      <p>Please find the invoice details below for <strong>${escapeHtml(job.title || `Job #${job.jobNumber}`)}</strong>.</p>
+      ${job.shootDates ? `<p><strong>Shoot Dates:</strong> ${escapeHtml(job.shootDates)}</p>` : ''}
 
       ${buildLineItemsHtml(job, items, expenses, totals)}
 
-      <p style="margin-top: 20px;"><strong>Payment Terms:</strong> ${job.paymentTerms}</p>
-      ${job.notes ? `<p style="color: #666;"><strong>Notes:</strong> ${job.notes}</p>` : ''}
+      <p style="margin-top: 20px;"><strong>Payment Terms:</strong> ${escapeHtml(job.paymentTerms)}</p>
+      ${job.notes ? `<p style="color: #666;"><strong>Notes:</strong> ${escapeHtml(job.notes)}</p>` : ''}
 
       <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;" />
       <p style="color: #888; font-size: 0.9em;">
-        ${settings.businessName || ''}<br/>
-        ${settings.businessAddress ? settings.businessAddress + '<br/>' : ''}
-        ${settings.businessPhone ? settings.businessPhone + '<br/>' : ''}
-        ${settings.businessEmail || ''}
+        ${escapeHtml(settings.businessName || '')}<br/>
+        ${settings.businessAddress ? escapeHtml(settings.businessAddress) + '<br/>' : ''}
+        ${settings.businessPhone ? escapeHtml(settings.businessPhone) + '<br/>' : ''}
+        ${escapeHtml(settings.businessEmail || '')}
       </p>
     </div>
   `

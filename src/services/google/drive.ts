@@ -1,3 +1,5 @@
+import { escapeQueryValue } from '../../utils/sanitize'
+
 const DRIVE_BASE = 'https://www.googleapis.com/drive/v3'
 const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3'
 
@@ -6,7 +8,7 @@ function authHeaders(token: string): HeadersInit {
 }
 
 export async function findFolder(name: string, parentId: string | null, token: string): Promise<string | null> {
-  const q = [`name='${name}'`, "mimeType='application/vnd.google-apps.folder'", 'trashed=false']
+  const q = [`name='${escapeQueryValue(name)}'`, "mimeType='application/vnd.google-apps.folder'", 'trashed=false']
   if (parentId) q.push(`'${parentId}' in parents`)
   const res = await fetch(`${DRIVE_BASE}/files?q=${encodeURIComponent(q.join(' and '))}&fields=files(id)`, {
     headers: authHeaders(token),
@@ -39,7 +41,7 @@ export async function ensureFolder(name: string, parentId: string | null, token:
 }
 
 export async function findFile(name: string, parentId: string, mimeType: string, token: string): Promise<string | null> {
-  const q = [`name='${name}'`, `mimeType='${mimeType}'`, `'${parentId}' in parents`, 'trashed=false']
+  const q = [`name='${escapeQueryValue(name)}'`, `mimeType='${escapeQueryValue(mimeType)}'`, `'${parentId}' in parents`, 'trashed=false']
   const res = await fetch(`${DRIVE_BASE}/files?q=${encodeURIComponent(q.join(' and '))}&fields=files(id)`, {
     headers: authHeaders(token),
   })

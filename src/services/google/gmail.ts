@@ -1,3 +1,5 @@
+import { sanitizeFilename, sanitizeHeaderValue } from '../../utils/sanitize'
+
 interface Attachment {
   filename: string
   mimeType: string
@@ -22,8 +24,8 @@ function buildMultipartMime({ to, subject, html, attachments = [] }: EmailParams
   const boundary = `boundary_${Date.now()}`
 
   const headers = [
-    `To: ${to.join(', ')}`,
-    `Subject: ${subject}`,
+    `To: ${sanitizeHeaderValue(to.join(', '))}`,
+    `Subject: ${sanitizeHeaderValue(subject)}`,
     'MIME-Version: 1.0',
   ]
 
@@ -47,11 +49,12 @@ function buildMultipartMime({ to, subject, html, attachments = [] }: EmailParams
   // Attachments
   for (const att of attachments) {
     const b64 = base64urlEncode(att.data).replace(/-/g, '+').replace(/_/g, '/') // back to regular base64 for MIME
+    const safeName = sanitizeFilename(att.filename)
     parts.push(
       `--${boundary}\r\n` +
-      `Content-Type: ${att.mimeType}; name="${att.filename}"\r\n` +
+      `Content-Type: ${att.mimeType}; name="${safeName}"\r\n` +
       'Content-Transfer-Encoding: base64\r\n' +
-      `Content-Disposition: attachment; filename="${att.filename}"\r\n` +
+      `Content-Disposition: attachment; filename="${safeName}"\r\n` +
       '\r\n' +
       b64,
     )
@@ -76,7 +79,6 @@ export async function sendEmail(token: string, params: EmailParams): Promise<voi
   })
 
   if (!res.ok) {
-    const error = await res.text()
-    throw new Error(`Failed to send email: ${error}`)
+    throw new Error('Failed to send email')
   }
 }

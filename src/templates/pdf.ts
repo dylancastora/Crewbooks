@@ -164,7 +164,7 @@ export function generateJobPDF(
   doc.setFontSize(9)
   doc.setTextColor(0, 0, 0)
   if (totals.laborSubtotal > 0) { doc.text('Labor:', totalsX, y); doc.text(formatCurrency(totals.laborSubtotal), 170, y); y += 5 }
-  if (totals.equipmentSubtotal > 0) { doc.text('Equipment:', totalsX, y); doc.text(formatCurrency(totals.equipmentSubtotal), 170, y); y += 5 }
+  if (totals.equipmentSubtotal > 0) { doc.text('Gear:', totalsX, y); doc.text(formatCurrency(totals.equipmentSubtotal), 170, y); y += 5 }
   if (totals.mileageSubtotal > 0) { doc.text('Mileage:', totalsX, y); doc.text(formatCurrency(totals.mileageSubtotal), 170, y); y += 5 }
   if (totals.expensesSubtotal > 0) { doc.text('Expenses:', totalsX, y); doc.text(formatCurrency(totals.expensesSubtotal), 170, y); y += 5 }
   if (totals.taxAmount > 0) { doc.text(`Tax (${job.taxRate}%):`, totalsX, y); doc.text(formatCurrency(totals.taxAmount), 170, y); y += 5 }

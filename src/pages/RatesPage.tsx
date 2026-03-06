@@ -77,13 +77,13 @@ export function RatesPage() {
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium min-h-[44px] transition-colors ${activeTab === tab ? 'bg-white shadow-sm text-primary' : 'text-gray-500'}`}
           >
-            {tab}
+            {tab === 'Equipment' ? 'Gear' : tab}
           </button>
         ))}
       </div>
 
       {rates.length === 0 ? (
-        <EmptyState message={`No ${activeTab.toLowerCase()} rates yet.`} actionLabel="Add Rate" onAction={openNew} />
+        <EmptyState message={`No ${activeTab === 'Equipment' ? 'gear' : 'labor'} rates yet.`} actionLabel="Add Rate" onAction={openNew} />
       ) : (
         <div className="space-y-2">
           {rates.map((rate) => (
@@ -109,7 +109,7 @@ export function RatesPage() {
         </div>
       )}
 
-      <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? `Edit Day Rate` : `New ${activeTab} Day Rate`}>
+      <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? `Edit Day Rate` : `New ${activeTab === 'Equipment' ? 'Gear' : 'Labor'} Day Rate`}>
         <div className="space-y-3">
           <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="off" />
           <Input label="Day Rate ($)" type="number" step="0.01" value={form.rate || ''} onChange={(e) => setForm({ ...form, rate: parseFloat(e.target.value) || 0 })} autoComplete="off" />

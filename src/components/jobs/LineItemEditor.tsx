@@ -26,7 +26,7 @@ interface LineItemEditorProps {
 
 const typeOptions = [
   { value: ItemType.Labor, label: 'Labor' },
-  { value: ItemType.Equipment, label: 'Equipment' },
+  { value: ItemType.Equipment, label: 'Gear' },
   { value: ItemType.Mileage, label: 'Mileage' },
   { value: 'expense', label: 'Expenses' },
 ]
@@ -302,13 +302,13 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
 
           {!readOnly && (
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={openNewInlineRate}>+ New {activeTab === 'labor' ? 'Labor' : 'Equipment'} Rate</Button>
+              <Button size="sm" variant="secondary" onClick={openNewInlineRate}>+ New {activeTab === 'labor' ? 'Labor' : 'Gear'} Rate</Button>
             </div>
           )}
         </>
       )}
 
-      <Modal open={showNewRateModal} onClose={() => setShowNewRateModal(false)} title={`New ${activeTab === ItemType.Labor ? 'Labor' : 'Equipment'} Rate`}>
+      <Modal open={showNewRateModal} onClose={() => setShowNewRateModal(false)} title={`New ${activeTab === ItemType.Labor ? 'Labor' : 'Gear'} Rate`}>
         <div className="space-y-3">
           <Input label="Name / Description" value={newRateForm.name} onChange={(e) => setNewRateForm({ ...newRateForm, name: e.target.value })} autoComplete="off" />
           <Input label="Day Rate ($)" type="number" step="0.01" value={newRateForm.rate || ''} onChange={(e) => setNewRateForm({ ...newRateForm, rate: parseFloat(e.target.value) || 0 })} autoComplete="off" />

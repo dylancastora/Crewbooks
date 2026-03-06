@@ -46,7 +46,7 @@ export function JobSummary({ items, taxRate, shootDays, expensesSubtotal = 0 }: 
         )}
         {equipmentDaily > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Equipment (daily)</span>
+            <span className="text-gray-600">Gear (daily)</span>
             <span>${equipmentDaily.toFixed(2)}</span>
           </div>
         )}
