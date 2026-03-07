@@ -13,8 +13,8 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 min-h-screen">
       <div className="p-4 border-b border-gray-200">
         <>
-          <link href="https://fonts.googleapis.com/css2?family=Londrina+Sketch&display=swap" rel="stylesheet" />
-          <h1 style={{ fontFamily: "'Londrina Sketch', Sans-Serif" }} className="text-4xl font-extrabold text-primary mb-2">Crewbooks</h1>
+          <link href="https://fonts.googleapis.com/css2?family=Winky+Rough:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet" />
+          <h1 style={{ fontFamily: "'Winky Rough', Sans-Serif" }} className="text-4xl font-extrabold text-primary mb-2">Crewbooks</h1>
         </>
       </div>
       <nav className="flex-1 py-2">
