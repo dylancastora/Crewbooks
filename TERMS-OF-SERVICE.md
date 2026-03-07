@@ -169,8 +169,7 @@ We may update these Terms from time to time. When we do, we will update the "Las
 
 For questions about these Terms, please contact us at:
 
-**CrewBooks**
-[your-email@crewbooks.io]
+dylancastora@gmail.com
 
 ---
 

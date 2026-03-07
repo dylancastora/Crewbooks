@@ -11,6 +11,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { MorePage } from './pages/MorePage'
 import { JobDetailPage } from './pages/JobDetailPage'
 import { PrivacyPage } from './pages/PrivacyPage'
+import { TermsPage } from './pages/TermsPage'
 import { ToastProvider } from './components/ui/Toast'
 import type { ReactNode } from 'react'
 
@@ -27,6 +28,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPage />} />
+      <Route path="/terms-of-service" element={<TermsPage />} />
       <Route element={<AuthGate><AppShell /></AuthGate>}>
         <Route index element={<DashboardPage />} />
         <Route path="jobs" element={<JobsPage />} />

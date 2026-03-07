@@ -70,6 +70,12 @@ export function MorePage() {
         <Button variant="secondary" onClick={() => setShowSupport(true)} className="w-full">
           Contact Support
         </Button>
+        <Link to="/privacy-policy" className="block">
+          <Button variant="secondary" className="w-full pointer-events-none">Privacy Policy</Button>
+        </Link>
+        <Link to="/terms-of-service" className="block">
+          <Button variant="secondary" className="w-full pointer-events-none">Terms of Service</Button>
+        </Link>
         <Button variant="danger" onClick={signOut} className="w-full">
           Sign Out
         </Button>
