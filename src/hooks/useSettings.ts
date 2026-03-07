@@ -10,7 +10,6 @@ export function useSettings() {
 
   const load = useCallback(async () => {
     if (!spreadsheetId) return
-    setLoading(true)
     try {
       const token = await getToken()
       const s = await getSettings(spreadsheetId, token)

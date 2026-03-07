@@ -10,7 +10,6 @@ export function useExpenses() {
 
   const load = useCallback(async () => {
     if (!spreadsheetId) return
-    setLoading(true)
     try {
       const token = await getToken()
       const data = await getExpenses(spreadsheetId, token)

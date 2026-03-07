@@ -5,6 +5,7 @@ import { useClients } from '../hooks/useClients'
 import { useJobItems } from '../hooks/useJobItems'
 import { useCommunications } from '../hooks/useCommunications'
 import { useJobActions } from '../hooks/useJobActions'
+import { useExpenses } from '../hooks/useExpenses'
 import { Card } from '../components/ui/Card'
 import { Spinner } from '../components/ui/Spinner'
 import { JobCard } from '../components/jobs/JobCard'
@@ -21,8 +22,9 @@ export function DashboardPage() {
   const { loading: itemsLoading } = useJobItems()
   const { loading: commsLoading } = useCommunications()
   const { loading: jobsLoading } = useJobs()
+  const { loading: expensesLoading } = useExpenses()
 
-  const loading = jobsLoading || itemsLoading || commsLoading
+  const loading = jobsLoading || itemsLoading || commsLoading || expensesLoading
 
   if (loading) return <Spinner className="py-12" />
 

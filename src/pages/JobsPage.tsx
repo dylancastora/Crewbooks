@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useClients } from '../hooks/useClients'
 import { useJobItems } from '../hooks/useJobItems'
 import { useCommunications } from '../hooks/useCommunications'
+import { useExpenses } from '../hooks/useExpenses'
 import { useJobActions } from '../hooks/useJobActions'
 import { Button } from '../components/ui/Button'
 import { Select } from '../components/ui/Select'
@@ -19,9 +20,10 @@ export function JobsPage() {
   const { jobs, getPreferredAction, getMenuActions, totalsMap, allExpenses, getItemsForJob, getForJob } = useJobActions()
   const { loading: itemsLoading } = useJobItems()
   const { loading: commsLoading } = useCommunications()
+  const { loading: expensesLoading } = useExpenses()
   const [filter, setFilter] = useState<string>('All')
 
-  const loading = itemsLoading || commsLoading
+  const loading = itemsLoading || commsLoading || expensesLoading
 
   const filteredJobs = filter === 'All'
     ? jobs

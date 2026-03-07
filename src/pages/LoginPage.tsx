@@ -19,10 +19,19 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
       <div className="bg-white rounded-2xl shadow-lg p-12 w-full max-w-sm text-center">
-          <h1 className="text-3xl font-extrabold text-primary mb-2">Crewbooks</h1>
-        <p className="text-gray-500 italic mb-8">A lightweight operations manager for Filmmakers</p>
+        <>
+          <link href="https://fonts.googleapis.com/css2?family=Londrina+Sketch&display=swap" rel="stylesheet" />
+          <h1 style={{ fontFamily: "'Londrina Sketch', cursive" }} className="text-6xl font-extrabold text-primary mb-2">Crewbooks</h1>
+        </>
+        <p className="text-gray-500 italic mb-8">A lightweight operations manager<br />for filmmakers</p>
         <ul className="text-gray-500 mb-8 list space-y-3">
-            <li>Free and open source</li>
+            <li>Free and&nbsp;
+            <a
+              href="https://www.github.com/dylancastora/crewbooks"
+              className="text-primary hover:underline"
+              target="_blank" rel="noopener noreferrer"
+              >Open Source</a>
+            </li>
             <li>Track clients, jobs, expenses, rates, quotes and invoices</li>
             <li>Your data lives entirely inside your Google Workspace, under your control</li>
         </ul>
@@ -42,11 +51,13 @@ export function LoginPage() {
             target="_blank" rel="noopener noreferrer"
           >Dylan Castora</a>
         , Sound Mixer</p>
-        <a
-          href="mailto:dylancastora@gmail.com"
-          className=" text-primary hover:underline mt-2 inline-block"
-          target="_blank" rel="noopener noreferrer"
-        >Book me for a shoot</a>
+        <p className="text-gray-500">Working in Boston?&nbsp;
+          <a
+            href="mailto:dylancastora@gmail.com"
+            className=" text-primary hover:underline mt-2 inline-block"
+            target="_blank" rel="noopener noreferrer"
+          > Book Me!</a>
+        </p>
         <br />
         <a
           href="https://ko-fi.com/dylancastora"
