@@ -43,7 +43,7 @@ export function MorePage() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100dvh-8rem)]">
       <h1 className="text-2xl font-bold mb-6">More</h1>
       {user && (
         <Card className="mb-4">
@@ -70,16 +70,15 @@ export function MorePage() {
         <Button variant="secondary" onClick={() => setShowSupport(true)} className="w-full">
           Contact Support
         </Button>
-        <Link to="/privacy-policy" className="block">
-          <Button variant="secondary" className="w-full pointer-events-none">Privacy Policy</Button>
-        </Link>
-        <Link to="/terms-of-service" className="block">
-          <Button variant="secondary" className="w-full pointer-events-none">Terms of Service</Button>
-        </Link>
         <Button variant="danger" onClick={signOut} className="w-full">
           Sign Out
         </Button>
       </div>
+      <p className="mt-auto pt-6 pb-2 text-gray-500 text-center">
+        <Link to="/terms-of-service" className="hover:underline">Terms of Service</Link>
+        {' · '}
+        <Link to="/privacy-policy" className="hover:underline">Privacy Policy</Link>
+      </p>
 
       <Modal open={showSupport} onClose={() => setShowSupport(false)} title="Contact Support">
         <div className="space-y-3">

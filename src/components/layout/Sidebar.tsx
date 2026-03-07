@@ -14,6 +14,7 @@ const navItems = [
   { to: '/clients', label: 'Clients', icon: '⊡' },
   { to: '/expenses', label: 'Expenses', icon: '⊘' },
   { to: '/rates', label: 'Rates', icon: '$' },
+  { to: '/settings', label: 'Settings', icon: '⚙' },
 ]
 
 export function Sidebar() {
@@ -73,15 +74,6 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="border-t border-gray-200">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-3 min-h-[44px] text-sm font-medium ${isActive ? 'text-primary bg-primary/5' : 'text-gray-600 hover:bg-gray-50'}`
-          }
-        >
-          <span className="text-lg">⚙</span>
-          Settings
-        </NavLink>
         <button
           onClick={() => setShowSupport(true)}
           className="flex items-center gap-3 px-4 py-3 min-h-[44px] text-sm font-medium text-gray-600 hover:bg-gray-50 w-full text-left"
