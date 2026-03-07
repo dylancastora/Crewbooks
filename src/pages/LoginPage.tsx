@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/Button'
 import { Spinner } from '../components/ui/Spinner'
@@ -17,7 +17,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col bg-gray-50 px-4">
+      <div className="flex-1 flex flex-col items-center justify-center">
       <div className="bg-white rounded-2xl shadow-lg p-12 w-full max-w-sm text-center">
         <>
           <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800&display=swap" rel="stylesheet" />
@@ -65,6 +66,12 @@ export function LoginPage() {
           target="_blank" rel="noopener noreferrer"
         >Support Crewbooks</a>
       </div>
+      </div>
+      <p className="pb-4 text-gray-500 text-center">
+        <Link to="/terms-of-service" className="hover:underline">Terms of Service</Link>
+        {' · '}
+        <Link to="/privacy-policy" className="hover:underline">Privacy Policy</Link>
+      </p>
     </div>
   )
 }
