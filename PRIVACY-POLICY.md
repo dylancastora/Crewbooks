@@ -134,8 +134,7 @@ CrewBooks is intended for use by adults engaged in professional freelance work. 
 
 If you have questions or concerns about this Privacy Policy, or wish to exercise your rights, please contact us at:
 
-**CrewBooks**
-[your-email@crewbooks.io]
+dylancastora@gmail.com
 
 ---
 
