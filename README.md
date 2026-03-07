@@ -58,15 +58,19 @@ Features:
 - Add "Invoice Issued" date to PDF
 - Save Invoice PDFs in Google Drive, with a unique reference to the communication that generated it
 - Keep me signed in
+- Google calendar integration
 - Data import/migration
+
 
 UI Improvements:
 - Consistent button sizes
 
 Known Bugs:
-- Expenses get marked billed when they are added as line items, not when the job is saved.  If job unsaved, expense becomes unbillable
+- Expenses seem to get marked as billed when they are added as line items, not when the job is saved.  If an expense is adde to a job, and the user exits the job without saving (discarding changes), the expense becomes unbillable.  An expense should not be flagged as "billed" until the job containing it is saved.  If an expense is removed from a job, it should become billable again.
 - On mobile, take/upload photo button forces "take" (no upload option)
-- Mileage shows (1) in job line item summary, even with no values entered
+- Mileage shows (1) in job line item summary, even with no "miles" value entered.
+- More page not visible in desktop version (Can't access logout, or Contact Support Buttons)
+- Intermittent logout/data desync
 
 ---
 

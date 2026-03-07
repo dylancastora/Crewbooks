@@ -18,8 +18,8 @@ interface LineItemEditorProps {
   readOnly?: boolean
   onCreateRate?: (type: 'Labor' | 'Equipment', data: { name: string; rate: number; taxable: boolean }) => Promise<void>
   clientId?: string
-  expenses?: Expense[]
-  jobId?: string
+  linkedExpenses?: Expense[]
+  availableExpenses?: Expense[]
   onLinkExpense?: (expense: Expense) => void
   onUnlinkExpense?: (expense: Expense) => void
 }
@@ -31,7 +31,7 @@ const typeOptions = [
   { value: 'expense', label: 'Expenses' },
 ]
 
-export function LineItemEditor({ items, onChange, laborRates, equipmentRates, settings, shootDays, readOnly, onCreateRate, clientId, expenses = [], jobId, onLinkExpense, onUnlinkExpense }: LineItemEditorProps) {
+export function LineItemEditor({ items, onChange, laborRates, equipmentRates, settings, shootDays, readOnly, onCreateRate, clientId, linkedExpenses = [], availableExpenses = [], onLinkExpense, onUnlinkExpense }: LineItemEditorProps) {
   const [activeTab, setActiveTab] = useState<string>(ItemType.Labor)
   const [showNewRateModal, setShowNewRateModal] = useState(false)
   const [newRateForm, setNewRateForm] = useState({ name: '', rate: 0, taxable: false, saveToRates: false })
@@ -119,13 +119,12 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
     return shootDays * item.quantity * item.rate
   }
 
-  // Expense tab data
-  const linkedExpenses = expenses.filter((e) => e.jobId === jobId)
-  const availableExpenses = expenses.filter((e) => e.clientId === clientId && !e.billed)
-
   // Tab counts
   const getTabCount = (value: string) => {
     if (value === 'expense') return linkedExpenses.length
+    if (value === ItemType.Mileage) {
+      return items.filter((i) => i.type === value && i.quantity > 0).length
+    }
     return items.filter((i) => i.type === value).length
   }
 

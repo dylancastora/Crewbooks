@@ -49,6 +49,9 @@ export function JobDetailPage() {
   const [items, setItems] = useState<PartialItem[]>([])
   const [saving, setSaving] = useState(false)
   const [loadingItems, setLoadingItems] = useState(!isNew)
+  const [pendingLinks, setPendingLinks] = useState<Expense[]>([])
+  const [pendingUnlinks, setPendingUnlinks] = useState<Expense[]>([])
+
 
   // Compute shoot days from selected dates
   const shootDays = formData.shootDates
@@ -92,18 +95,28 @@ export function JobDetailPage() {
     }).finally(() => setLoadingItems(false))
   }, [existingJob, spreadsheetId, getToken])
 
-  // Expense linking
-  const linkedExpenses = expenses.filter((e) => e.jobId === existingJob?.id)
-  const availableExpenses = expenses.filter((e) => e.clientId === formData.clientId && !e.billed)
+  // Expense linking — deferred until save
+  const pendingLinkIds = new Set(pendingLinks.map((e) => e.id))
+  const pendingUnlinkIds = new Set(pendingUnlinks.map((e) => e.id))
+  const linkedExpenses = [
+    ...expenses.filter((e) => e.jobId === existingJob?.id && !pendingUnlinkIds.has(e.id)),
+    ...pendingLinks,
+  ]
+  const availableExpenses = [
+    ...expenses.filter((e) => e.clientId === formData.clientId && !e.billed && !pendingLinkIds.has(e.id)),
+    ...pendingUnlinks,
+  ]
   const expensesSubtotal = linkedExpenses.reduce((sum, e) => sum + e.amount, 0)
 
-  const handleLinkExpense = useCallback(async (expense: Expense) => {
-    await updateExpense({ ...expense, jobId: existingJob?.id || '', billed: true })
-  }, [updateExpense, existingJob?.id])
+  const handleLinkExpense = useCallback((expense: Expense) => {
+    setPendingUnlinks((prev) => prev.filter((e) => e.id !== expense.id))
+    setPendingLinks((prev) => prev.some((e) => e.id === expense.id) ? prev : [...prev, expense])
+  }, [])
 
-  const handleUnlinkExpense = useCallback(async (expense: Expense) => {
-    await updateExpense({ ...expense, jobId: '', billed: false })
-  }, [updateExpense])
+  const handleUnlinkExpense = useCallback((expense: Expense) => {
+    setPendingLinks((prev) => prev.filter((e) => e.id !== expense.id))
+    setPendingUnlinks((prev) => [...prev, expense])
+  }, [])
 
   const handleCreateRate = useCallback(async (type: 'Labor' | 'Equipment', data: { name: string; rate: number; taxable: boolean }) => {
     await createRate(type, { ...data, unit: Unit.Day, isActive: true })
@@ -144,6 +157,8 @@ export function JobDetailPage() {
         : shootDays * item.quantity * item.rate,
     }))
 
+    let savedJob: Job | undefined
+
     if (isNew) {
       const job = await createJob({
         ...formData,
@@ -156,7 +171,7 @@ export function JobDetailPage() {
           jobId: job.id,
           jobNumber: job.jobNumber,
         })), token)
-        return job
+        savedJob = job
       }
     } else if (existingJob) {
       const updatedJob: Job = { ...existingJob, ...formData, title: existingJob.title, taxRate: existingJob.taxRate }
@@ -166,8 +181,24 @@ export function JobDetailPage() {
         jobId: existingJob.id,
         jobNumber: existingJob.jobNumber,
       })), token)
-      return updatedJob
+      savedJob = updatedJob
     }
+
+    if (savedJob) {
+      // Persist expense link/unlink operations
+      await Promise.all([
+        ...pendingLinks.map((expense) =>
+          updateExpense({ ...expense, jobId: savedJob!.id, billed: true })
+        ),
+        ...pendingUnlinks.map((expense) =>
+          updateExpense({ ...expense, jobId: '', billed: false })
+        ),
+      ])
+      setPendingLinks([])
+      setPendingUnlinks([])
+    }
+
+    return savedJob
   }
 
   const handleSave = async () => {
@@ -222,8 +253,8 @@ export function JobDetailPage() {
             readOnly={lineItemsReadOnly}
             onCreateRate={handleCreateRate}
             clientId={formData.clientId}
-            expenses={[...linkedExpenses, ...availableExpenses]}
-            jobId={existingJob?.id}
+            linkedExpenses={linkedExpenses}
+            availableExpenses={availableExpenses}
             onLinkExpense={handleLinkExpense}
             onUnlinkExpense={handleUnlinkExpense}
           />

@@ -65,7 +65,6 @@ export function ReceiptUploader({ jobNumber, clientCompany, onUpload, existingFi
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleFileChange}
         className="hidden"
       />
