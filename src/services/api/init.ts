@@ -18,6 +18,7 @@ const TABS = {
 const DEFAULT_SETTINGS = [
   ['mileageRate', '0.725'],
   ['defaultPaymentTerms', 'Net 30'],
+  ['defaultTaxRate', '10'],
   ['businessName', ''],
   ['businessAddress', ''],
   ['businessPhone', ''],

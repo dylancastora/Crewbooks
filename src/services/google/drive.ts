@@ -66,9 +66,9 @@ export async function createSpreadsheet(name: string, parentId: string, token: s
   return data.id
 }
 
-export async function uploadFile(file: File, folderId: string, token: string): Promise<string> {
+export async function uploadFile(file: File, folderId: string, token: string, customName?: string): Promise<string> {
   const metadata = {
-    name: file.name,
+    name: customName || file.name,
     parents: [folderId],
   }
 

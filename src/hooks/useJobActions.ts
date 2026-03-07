@@ -106,7 +106,8 @@ export function useJobActions(onComplete?: () => void) {
 
     const subject = `Invoice #${job.jobNumber} - ${client.company}`
     const html = generateInvoiceHtml(job, jobItems, jobExpenses, client, jobContacts, settings, totals)
-    const pdfData = generateJobPDF(job, jobItems, jobExpenses, client, settings, totals)
+    const invoiceDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    const pdfData = generateJobPDF(job, jobItems, jobExpenses, client, settings, totals, invoiceDate)
 
     const attachments: Array<{ filename: string; mimeType: string; data: Uint8Array }> = [
       { filename: `Invoice-${job.jobNumber}.pdf`, mimeType: 'application/pdf', data: pdfData },

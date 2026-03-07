@@ -115,7 +115,13 @@ export function JobCard({ job, clientName, totals, items, expenses, communicatio
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center justify-between text-sm font-semibold border-t mt-2 pt-2">
+                {totals.taxAmount > 0 && (
+                  <div className="flex items-center justify-between text-sm text-gray-500 border-t mt-2 pt-2">
+                    <span>Tax ({job.taxRate}%)</span>
+                    <span>{formatCurrency(totals.taxAmount)}</span>
+                  </div>
+                )}
+                <div className={`flex items-center justify-between text-sm font-semibold ${totals.taxAmount > 0 ? 'mt-1' : 'border-t mt-2 pt-2'}`}>
                   <span>Total</span>
                   <span>{formatCurrency(totals.total)}</span>
                 </div>

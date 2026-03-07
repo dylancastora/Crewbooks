@@ -17,6 +17,7 @@ export function generateJobPDF(
   client: Client,
   settings: Settings,
   totals: JobTotals,
+  invoiceDate?: string,
 ): Uint8Array {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -63,6 +64,7 @@ export function generateJobPDF(
   doc.setTextColor(80, 80, 80)
   if (job.shootDates) { doc.text(`Shoot Dates: ${job.shootDates}`, 14, y); y += 5 }
   if (job.paymentTerms) { doc.text(`Payment Terms: ${job.paymentTerms}`, 14, y); y += 5 }
+  if (invoiceDate) { doc.text(`Invoice Issued: ${invoiceDate}`, 14, y); y += 5 }
   y += 5
 
   const shootDays = computeShootDays(job.shootDates)
@@ -185,6 +187,19 @@ export function generateJobPDF(
     doc.setTextColor(100, 100, 100)
     doc.text(`Notes: ${job.notes}`, 14, y, { maxWidth: pageWidth - 28 })
   }
+
+  // Powered by Crewbooks footer
+  const pageHeight = doc.internal.pageSize.getHeight()
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  const footerText = 'Powered by Crewbooks \u00B7 '
+  const footerLink = 'Crewbooks.io'
+  const footerFullWidth = doc.getTextWidth(footerText + footerLink)
+  const footerStartX = (pageWidth - footerFullWidth) / 2
+  doc.setTextColor(0, 0, 0)
+  doc.text(footerText, footerStartX, pageHeight - 10)
+  doc.setTextColor(30, 64, 175)
+  doc.text(footerLink, footerStartX + doc.getTextWidth(footerText), pageHeight - 10)
 
   return new Uint8Array(doc.output('arraybuffer'))
 }

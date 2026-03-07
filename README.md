@@ -50,27 +50,32 @@ No data ever touches a third-party server.
 ## To Do
 
 Features:
-- Sales tax calculations
-- Due date system
-- Add Crewbooks link to email footer, PDF
-- Name photo upload using [Description-Date-UniqueID]
-- Confirm unsaved changes before navigating away
-- Add "Invoice Issued" date to PDF
 - Save Invoice PDFs in Google Drive, with a unique reference to the communication that generated it
+- Due date system
 - Keep me signed in
 - Google calendar integration
 - Data import/migration
+- Confirm unsaved job changes before navigating away. This should be true for using the back, forward buttons in the browser, as well as internal app navigation.
 
 
 UI Improvements:
 - Consistent button sizes
+- Modify [+ New Gear rate] and [+ New Labor rate] buttons so they're easily distinguishable from the [+ line item] buttons.
 
 Known Bugs:
-- Expenses seem to get marked as billed when they are added as line items, not when the job is saved.  If an expense is adde to a job, and the user exits the job without saving (discarding changes), the expense becomes unbillable.  An expense should not be flagged as "billed" until the job containing it is saved.  If an expense is removed from a job, it should become billable again.
-- On mobile, take/upload photo button forces "take" (no upload option)
-- Mileage shows (1) in job line item summary, even with no "miles" value entered.
 - More page not visible in desktop version (Can't access logout, or Contact Support Buttons)
 - Intermittent logout/data desync
+- The dropdown that contains the additional actions is sometimes cut off if the button is at the bottom of the window.
+
+---
+
+## In Progress
+
+- Sales tax calculations - Currently, rates include a designation as taxable (or not).  Let's add a "sales tax rate" field to settings.  For each taxable line item is added to a job, let's multiply that item's total and add it to a sales tax line item (qty x rate x days x tax rate).
+- Add Crewbooks link to email footer, PDF
+- Name photo upload using a 'Description-Date-UniqueID' Schema
+- Add "Invoice Issued" date to PDF (The date in which the communication was sent)
+- Adding a new rate inline from the job edit page shows the form in a modal at the bottom of the display, but adding a clientt inline pops up in the main edit page.  Let's make the inline client add feature use a modal like the other inline add features.
 
 ---
 

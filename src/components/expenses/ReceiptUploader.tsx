@@ -11,9 +11,19 @@ interface ReceiptUploaderProps {
   clientCompany?: string
   onUpload: (fileId: string, fileName: string) => void
   existingFileName?: string
+  description?: string
+  date?: string
 }
 
-export function ReceiptUploader({ jobNumber, clientCompany, onUpload, existingFileName }: ReceiptUploaderProps) {
+function buildCustomFileName(description: string | undefined, date: string | undefined, originalName: string): string {
+  const ext = originalName.includes('.') ? '.' + originalName.split('.').pop() : ''
+  const uid = crypto.randomUUID().slice(0, 8)
+  const sanitized = (description || '').replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-') || 'receipt'
+  const datePart = date || new Date().toISOString().split('T')[0]
+  return `${sanitized}-${datePart}-${uid}${ext}`
+}
+
+export function ReceiptUploader({ jobNumber, clientCompany, onUpload, existingFileName, description, date }: ReceiptUploaderProps) {
   const { receiptsFolderId, getToken } = useAuth()
   const { showToast } = useToast()
   const [uploading, setUploading] = useState(false)
@@ -44,9 +54,10 @@ export function ReceiptUploader({ jobNumber, clientCompany, onUpload, existingFi
         folderId = await ensureFolder(`${jobNumber} - ${clientCompany}`, receiptsFolderId, token)
       }
 
-      const fileId = await uploadFile(file, folderId, token)
-      setFileName(file.name)
-      onUpload(fileId, file.name)
+      const customName = buildCustomFileName(description, date, file.name)
+      const fileId = await uploadFile(file, folderId, token, customName)
+      setFileName(customName)
+      onUpload(fileId, customName)
     } catch (err) {
       console.error('Upload failed:', err instanceof Error ? err.message : 'Unknown error')
       showToast('Upload failed')

@@ -130,6 +130,7 @@ export function generateQuoteHtml(
         ${settings.businessPhone ? escapeHtml(settings.businessPhone) + '<br/>' : ''}
         ${escapeHtml(settings.businessEmail || '')}
       </p>
+      <p style="margin-top: 40px; color: #000; text-align: center;">Powered by <a href="https://crewbooks.io" style="color: #1e40af;">Crewbooks</a></p>
     </div>
   `
 }
@@ -164,6 +165,7 @@ export function generateInvoiceHtml(
         ${settings.businessPhone ? escapeHtml(settings.businessPhone) + '<br/>' : ''}
         ${escapeHtml(settings.businessEmail || '')}
       </p>
+      <p style="margin-top: 40px; color: #000; text-align: center;">Powered by <a href="https://crewbooks.io" style="color: #1e40af;">Crewbooks</a></p>
     </div>
   `
 }

@@ -227,6 +227,8 @@ export function ExpensesPage() {
             jobNumber={undefined}
             clientCompany={selectedClient?.company}
             existingFileName={form.receiptFileName}
+            description={form.description}
+            date={form.date}
             onUpload={(fileId, fileName) => setForm({ ...form, receiptFileId: fileId, receiptFileName: fileName })}
           />
           <Button onClick={handleSave} disabled={saving || !form.description} className="w-full">

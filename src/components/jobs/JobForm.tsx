@@ -3,6 +3,7 @@ import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
 import { DatePicker } from '../ui/DatePicker'
 import { Button } from '../ui/Button'
+import { Modal } from '../ui/Modal'
 import type { Client, Contact } from '../../types'
 
 interface JobFormData {
@@ -110,9 +111,8 @@ export function JobForm({ data, onChange, clients, contacts, createClient, creat
         ]}
         onChange={(e) => handleClientChange(e.target.value)}
       />
-      {showNewClient && (
-        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-          <h4 className="font-medium text-sm text-gray-700">New Client</h4>
+      <Modal open={showNewClient} onClose={handleCancelNewClient} title="New Client">
+        <div className="space-y-3">
           <Input label="Company" value={newClientForm.company} onChange={(e) => setNewClientForm({ ...newClientForm, company: e.target.value })} autoComplete="off" />
           <Input label="Address" value={newClientForm.address} onChange={(e) => setNewClientForm({ ...newClientForm, address: e.target.value })} autoComplete="off" />
           <div className="grid grid-cols-3 gap-2">
@@ -133,7 +133,7 @@ export function JobForm({ data, onChange, clients, contacts, createClient, creat
             <Button variant="secondary" onClick={handleCancelNewClient}>Cancel</Button>
           </div>
         </div>
-      )}
+      </Modal>
       {clientContacts.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Contacts</label>

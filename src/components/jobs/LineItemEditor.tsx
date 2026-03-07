@@ -291,7 +291,6 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     checked={item.taxable}
                     onChange={(e) => updateItem(idx, { taxable: e.target.checked })}
                     className="w-4 h-4 rounded"
-                    disabled={readOnly}
                   />
                   <span className="text-sm">Taxable</span>
                 </label>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../hooks/useJobs'
@@ -13,6 +13,7 @@ import { JobForm } from '../components/jobs/JobForm'
 import { LineItemEditor } from '../components/jobs/LineItemEditor'
 import { JobSummary } from '../components/jobs/JobSummary'
 import { Spinner } from '../components/ui/Spinner'
+import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
 import type { Job, JobItem, Expense } from '../types'
 
@@ -36,6 +37,7 @@ export function JobDetailPage() {
 
   const isNew = id === 'new'
   const existingJob = jobs.find((j) => j.id === id)
+  const defaultTaxRate = parseFloat(settings.defaultTaxRate) || 0
 
   const [formData, setFormData] = useState({
     clientId: '',
@@ -44,6 +46,7 @@ export function JobDetailPage() {
     paymentTerms: settings.defaultPaymentTerms || 'Net 30',
     notes: '',
     jobNumber: '',
+    taxRate: defaultTaxRate,
   })
 
   const [items, setItems] = useState<PartialItem[]>([])
@@ -51,7 +54,36 @@ export function JobDetailPage() {
   const [loadingItems, setLoadingItems] = useState(!isNew)
   const [pendingLinks, setPendingLinks] = useState<Expense[]>([])
   const [pendingUnlinks, setPendingUnlinks] = useState<Expense[]>([])
+  const [isDirty, setIsDirty] = useState(false)
+  const initialLoadDone = useRef(false)
 
+  // Track changes after initial load
+  const handleFormChange = useCallback((data: { clientId: string; contactIds: string; shootDates: string; paymentTerms: string; notes: string; jobNumber: string }) => {
+    setFormData((prev) => ({ ...prev, ...data }))
+    if (initialLoadDone.current) setIsDirty(true)
+  }, [])
+  const handleItemsChange = useCallback((newItems: PartialItem[]) => {
+    setItems(newItems)
+    if (initialLoadDone.current) setIsDirty(true)
+  }, [])
+
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
+
+  // Unsaved changes guard — tab close / refresh
+  useEffect(() => {
+    if (!isDirty) return
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  const handleBack = useCallback(() => {
+    if (isDirty) {
+      setShowLeaveModal(true)
+    } else {
+      navigate('/jobs')
+    }
+  }, [isDirty, navigate])
 
   // Compute shoot days from selected dates
   const shootDays = formData.shootDates
@@ -64,7 +96,10 @@ export function JobDetailPage() {
     setFormData((prev) => ({
       ...prev,
       jobNumber: padJobNumber(generateJobNumber(jobs, settings)),
+      taxRate: parseFloat(settings.defaultTaxRate) || 0,
     }))
+    // Mark initial load done for new jobs (no items to load)
+    if (isNew) initialLoadDone.current = true
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, jobs, settings])
 
@@ -78,9 +113,10 @@ export function JobDetailPage() {
         paymentTerms: existingJob.paymentTerms,
         notes: existingJob.notes,
         jobNumber: existingJob.jobNumber,
+        taxRate: existingJob.taxRate || defaultTaxRate,
       })
     }
-  }, [existingJob])
+  }, [existingJob, defaultTaxRate])
 
   // Load items for existing job
   useEffect(() => {
@@ -92,7 +128,10 @@ export function JobDetailPage() {
       setItems(jobItems.map(({ type, description, date, quantity, rate, taxable }) => ({
         type, description, date, quantity, rate, taxable,
       })))
-    }).finally(() => setLoadingItems(false))
+    }).finally(() => {
+      setLoadingItems(false)
+      initialLoadDone.current = true
+    })
   }, [existingJob, spreadsheetId, getToken])
 
   // Expense linking — deferred until save
@@ -111,11 +150,13 @@ export function JobDetailPage() {
   const handleLinkExpense = useCallback((expense: Expense) => {
     setPendingUnlinks((prev) => prev.filter((e) => e.id !== expense.id))
     setPendingLinks((prev) => prev.some((e) => e.id === expense.id) ? prev : [...prev, expense])
+    setIsDirty(true)
   }, [])
 
   const handleUnlinkExpense = useCallback((expense: Expense) => {
     setPendingLinks((prev) => prev.filter((e) => e.id !== expense.id))
     setPendingUnlinks((prev) => [...prev, expense])
+    setIsDirty(true)
   }, [])
 
   const handleCreateRate = useCallback(async (type: 'Labor' | 'Equipment', data: { name: string; rate: number; taxable: boolean }) => {
@@ -163,7 +204,7 @@ export function JobDetailPage() {
       const job = await createJob({
         ...formData,
         title: '',
-        taxRate: 0,
+        taxRate: formData.taxRate,
       }, settings)
       if (job) {
         await setJobItems(spreadsheetId, job.id, job.jobNumber, fullItems.map((item) => ({
@@ -174,7 +215,7 @@ export function JobDetailPage() {
         savedJob = job
       }
     } else if (existingJob) {
-      const updatedJob: Job = { ...existingJob, ...formData, title: existingJob.title, taxRate: existingJob.taxRate }
+      const updatedJob: Job = { ...existingJob, ...formData, title: existingJob.title, taxRate: formData.taxRate }
       await updateJob(updatedJob)
       await setJobItems(spreadsheetId, existingJob.id, existingJob.jobNumber, fullItems.map((item) => ({
         ...item,
@@ -206,6 +247,7 @@ export function JobDetailPage() {
     try {
       const saved = await saveJob()
       if (saved) {
+        setIsDirty(false)
         showToast(isNew ? `Job #${saved.jobNumber} created` : `Job #${saved.jobNumber} saved`)
         navigate('/jobs', { replace: true })
       }
@@ -222,7 +264,7 @@ export function JobDetailPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/jobs')} className="text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center text-xl">
+        <button onClick={handleBack} className="text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center text-xl">
           ←
         </button>
         <h1 className="text-2xl font-bold">{isNew ? 'New Job' : `Job #${existingJob?.jobNumber}`}</h1>
@@ -231,7 +273,7 @@ export function JobDetailPage() {
       <div className="space-y-6">
         <JobForm
           data={formData}
-          onChange={setFormData}
+          onChange={handleFormChange}
           clients={clients}
           contacts={contacts}
           createClient={createClient}
@@ -245,7 +287,7 @@ export function JobDetailPage() {
           )}
           <LineItemEditor
             items={items}
-            onChange={setItems}
+            onChange={handleItemsChange}
             laborRates={labor}
             equipmentRates={equipment}
             settings={settings}
@@ -260,7 +302,7 @@ export function JobDetailPage() {
           />
         </div>
 
-        <JobSummary items={items} taxRate={0} shootDays={shootDays || 1} expensesSubtotal={expensesSubtotal} />
+        <JobSummary items={items} taxRate={formData.taxRate} shootDays={shootDays || 1} expensesSubtotal={expensesSubtotal} />
 
         <button
           onClick={handleSave}
@@ -270,6 +312,24 @@ export function JobDetailPage() {
           {saving ? 'Saving...' : isNew ? 'Create Job' : 'Save Job'}
         </button>
       </div>
+
+      <Modal open={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Unsaved Changes">
+        <p className="text-gray-600 mb-4">You have unsaved changes. Are you sure you want to leave?</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowLeaveModal(false)}
+            className="flex-1 bg-primary text-white rounded-lg py-2 font-medium min-h-[44px] hover:bg-primary-dark"
+          >
+            Stay
+          </button>
+          <button
+            onClick={() => { setIsDirty(false); setShowLeaveModal(false); navigate('/jobs') }}
+            className="flex-1 bg-gray-200 text-gray-700 rounded-lg py-2 font-medium min-h-[44px] hover:bg-gray-300"
+          >
+            Leave
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }
