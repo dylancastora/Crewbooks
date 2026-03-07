@@ -192,7 +192,7 @@ export function generateJobPDF(
   const pageHeight = doc.internal.pageSize.getHeight()
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  const footerText = 'Powered by Crewbooks \u00B7 '
+  const footerText = 'Powered by '
   const footerLink = 'Crewbooks.io'
   const footerFullWidth = doc.getTextWidth(footerText + footerLink)
   const footerStartX = (pageWidth - footerFullWidth) / 2

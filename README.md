@@ -71,12 +71,6 @@ Known Bugs:
 
 ## In Progress
 
-- Sales tax calculations - Currently, rates include a designation as taxable (or not).  Let's add a "sales tax rate" field to settings.  For each taxable line item is added to a job, let's multiply that item's total and add it to a sales tax line item (qty x rate x days x tax rate).
-- Add Crewbooks link to email footer, PDF
-- Name photo upload using a 'Description-Date-UniqueID' Schema
-- Add "Invoice Issued" date to PDF (The date in which the communication was sent)
-- Adding a new rate inline from the job edit page shows the form in a modal at the bottom of the display, but adding a clientt inline pops up in the main edit page.  Let's make the inline client add feature use a modal like the other inline add features.
-
 ---
 
 ## Getting Started
