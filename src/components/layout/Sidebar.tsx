@@ -14,7 +14,7 @@ export function Sidebar() {
       <div className="p-4 border-b border-gray-200">
         <>
           <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800&display=swap" rel="stylesheet" />
-          <h1 style={{ fontFamily: "'Rubik', Sans-Serif" }} className="text-4xl font-extrabold text-primary mb-2">Crewbooks</h1>
+          <h1 style={{ fontFamily: "'Rubik', Sans-Serif" }} className="text-3xl font-extrabold text-primary mb-2">Crewbooks</h1>
         </>
       </div>
       <nav className="flex-1 py-2">

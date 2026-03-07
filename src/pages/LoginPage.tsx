@@ -21,7 +21,7 @@ export function LoginPage() {
       <div className="bg-white rounded-2xl shadow-lg p-12 w-full max-w-sm text-center">
         <>
           <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800&display=swap" rel="stylesheet" />
-          <h1 style={{ fontFamily: "Rubik, Sans-Serif" }} className="text-5xl font-extrabold text-primary mb-2">Crewbooks</h1>
+          <h1 style={{ fontFamily: "Rubik, Sans-Serif" }} className="text-4xl font-extrabold text-primary mb-2">Crewbooks</h1>
         </>
         <p className="text-gray-500 italic mb-8">A lightweight operations manager<br />for filmmakers</p>
         <ul className="text-gray-500 mb-8 list space-y-3">
