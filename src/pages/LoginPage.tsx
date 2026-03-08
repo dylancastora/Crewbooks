@@ -22,7 +22,14 @@ export function LoginPage() {
       <div className="bg-white rounded-2xl shadow-lg p-12 w-full max-w-sm text-center">
         <>
           <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800&display=swap" rel="stylesheet" />
-          <h1 style={{ fontFamily: "Rubik, Sans-Serif" }} className="text-4xl font-extrabold text-primary mb-2">Crewbooks</h1>
+          <div className="flex items-center justify-center mb-2 max-w-sm mx-auto">
+            <svg style={{ width: '80%', height: 'auto' }} viewBox="0 0 248 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="13.39" width="7.3" height="12.17" rx="1.82" fill="#2563EB" opacity="0.4"/>
+              <rect x="11.3" y="6.09" width="7.3" height="19.47" rx="1.82" fill="#2563EB" opacity="0.65"/>
+              <rect x="22.6" y="0" width="7.3" height="25.56" rx="1.82" fill="#2563EB"/>
+              <text x="41.9" y="25.56" font-family="Rubik, sans-serif" font-weight="800" font-size="36" fill="black">Crewbooks</text>
+            </svg>
+          </div>
         </>
         <p className="text-gray-500 italic mb-8">A lightweight operations manager<br />for filmmakers</p>
         <ul className="text-gray-500 mb-8 list space-y-3">

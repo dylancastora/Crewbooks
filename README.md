@@ -63,9 +63,7 @@ UI Improvements:
 - Modify [+ New Gear rate] and [+ New Labor rate] buttons so they're easily distinguishable from the [+ line item] buttons.
 
 Known Bugs:
-- More page not visible in desktop version (Can't access logout, or Contact Support Buttons)
 - Intermittent logout/data desync
-- The dropdown that contains the additional actions is sometimes cut off if the button is at the bottom of the window.
 
 ---
 

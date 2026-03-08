@@ -51,11 +51,18 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 min-h-screen">
-      <div className="p-4 border-b border-gray-200">
+    <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-screen">
+      <div className="p-4 border-b border-gray-200 flex items-center " style={{paddingTop: '20px'}}>
         <>
           <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800&display=swap" rel="stylesheet" />
-          <h1 style={{ fontFamily: "'Rubik', Sans-Serif" }} className="text-3xl font-extrabold text-primary mb-2">Crewbooks</h1>
+          <div className="flex items-center mb-2 max-w-sm mx-auto">
+            <svg style={{ width: '100%', height: 'auto' }} viewBox="0 0 248 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="13.39" width="7.3" height="12.17" rx="1.82" fill="#2563EB" opacity="0.4"/>
+              <rect x="11.3" y="6.09" width="7.3" height="19.47" rx="1.82" fill="#2563EB" opacity="0.65"/>
+              <rect x="22.6" y="0" width="7.3" height="25.56" rx="1.82" fill="#2563EB"/>
+              <text x="41.9" y="25.56" font-family="Rubik, sans-serif" font-weight="800" font-size="36" fill="black">Crewbooks</text>
+            </svg>
+          </div>
         </>
       </div>
       <nav className="flex-1 py-2">
