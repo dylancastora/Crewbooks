@@ -59,6 +59,17 @@ We do not collect, store, or process:
 - Email content
 - Any data entered into CrewBooks beyond what is listed in Section 3.1 and 3.2
 
+### 3.4 Limited Use of Google User Data
+
+CrewBooks' access to and use of data received from Google APIs is limited to providing and improving the features of the Service as described in this policy. We do not use Google user data for any secondary purpose, including:
+
+- Advertising or targeted marketing
+- Training AI or machine learning models
+- Building user profiles or databases
+- Selling or transferring data to third parties for any purpose unrelated to operating CrewBooks
+
+This use complies with the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including its Limited Use requirements.
+
 ---
 
 ## 4. How We Use Your Information
@@ -118,7 +129,11 @@ To exercise any of these rights, contact us at the address in Section 10.
 
 ## 8. Security
 
-We take reasonable technical measures to protect the limited data we do handle, including secure OAuth 2.0 token management and HTTPS-only communication.
+We take reasonable technical measures to protect the limited data we do handle:
+
+- All data transmitted between your browser and CrewBooks is encrypted in transit via HTTPS.
+- OAuth 2.0 access tokens are stored securely, never logged, and never exposed to third parties.
+- Security procedures are in place to protect the confidentiality of any Google user data that passes through the Service during a session.
 
 Because your bookkeeping data lives in your Google account, its security is also governed by your Google account settings. We strongly encourage enabling two-factor authentication on your Google account.
 
@@ -134,7 +149,8 @@ CrewBooks is intended for use by adults engaged in professional freelance work. 
 
 If you have questions or concerns about this Privacy Policy, or wish to exercise your rights, please contact us at:
 
-dylancastora@gmail.com
+**CrewBooks**
+[dylancastora@gmail.com]
 
 ---
 

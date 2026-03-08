@@ -55,8 +55,8 @@ Features:
 - Keep me signed in
 - Google calendar integration
 - Data import/migration
-- Confirm unsaved job changes before navigating away. This should be true for using the back, forward buttons in the browser, as well as internal app navigation.
-
+- Confirm unsaved changes before navigating away
+- Reject user after auth if all data scopes not agreed to
 
 UI Improvements:
 - Consistent button sizes
