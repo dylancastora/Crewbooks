@@ -1,32 +1,19 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getSettings, updateSettings as updateSettingsApi } from '../services/api/settings'
-import type { Settings } from '../types'
+import { useDataContext } from '../context/DataProvider'
+import { updateSettings as updateSettingsApi } from '../services/api/settings'
 
 export function useSettings() {
   const { spreadsheetId, getToken } = useAuth()
-  const [settings, setSettings] = useState<Settings>({})
-  const [loading, setLoading] = useState(true)
-
-  const load = useCallback(async () => {
-    if (!spreadsheetId) return
-    try {
-      const token = await getToken()
-      const s = await getSettings(spreadsheetId, token)
-      setSettings(s)
-    } finally {
-      setLoading(false)
-    }
-  }, [spreadsheetId, getToken])
-
-  useEffect(() => { load() }, [load])
+  const { settings, setSettings, settingsLoading: loading, reloadSettings, isRateLimited } = useDataContext()
 
   const updateSettings = useCallback(async (updates: Record<string, string>) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     await updateSettingsApi(spreadsheetId, updates, token)
     setSettings((prev) => ({ ...prev, ...updates }))
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setSettings])
 
-  return { settings, updateSettings, loading, reload: load }
+  return { settings, updateSettings, loading, reload: reloadSettings }
 }

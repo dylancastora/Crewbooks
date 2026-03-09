@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
+import { RateLimitModal } from './RateLimitModal'
 import { OnboardingPrompt } from '../OnboardingPrompt'
 
 export function AppShell() {
@@ -14,6 +15,7 @@ export function AppShell() {
       </main>
       <BottomNav />
       <OnboardingPrompt />
+      <RateLimitModal />
     </div>
   )
 }

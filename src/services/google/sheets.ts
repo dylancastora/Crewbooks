@@ -1,5 +1,22 @@
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 
+const DEFAULT_RETRY_AFTER = 60
+
+let rateLimitCallback: ((retryAfterSeconds: number) => void) | null = null
+
+export function setRateLimitCallback(cb: (retryAfterSeconds: number) => void) {
+  rateLimitCallback = cb
+}
+
+function checkRateLimit(res: Response): void {
+  if (res.status === 429) {
+    const retryAfter = parseInt(res.headers.get('Retry-After') || '', 10)
+    const seconds = isNaN(retryAfter) ? DEFAULT_RETRY_AFTER : retryAfter
+    rateLimitCallback?.(seconds)
+    throw new Error(`Rate limited by Google Sheets API. Retry after ${seconds} seconds.`)
+  }
+}
+
 function authHeaders(token: string): HeadersInit {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 }
@@ -22,6 +39,7 @@ export async function getRows(
   const res = await fetch(`${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(tab)}`, {
     headers: authHeaders(token),
   })
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to get rows from ${tab}: ${res.statusText}`)
   const data = await res.json()
   const values: string[][] = data.values || []
@@ -46,6 +64,7 @@ export async function appendRow(
       body: JSON.stringify({ values: [rowData] }),
     },
   )
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to append row to ${tab}: ${res.statusText}`)
 }
 
@@ -65,6 +84,7 @@ export async function updateRow(
       body: JSON.stringify({ values: [rowData] }),
     },
   )
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to update row in ${tab}: ${res.statusText}`)
 }
 
@@ -78,6 +98,7 @@ async function findRowIndexByColumn(
   const res = await fetch(`${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(tab)}`, {
     headers: authHeaders(token),
   })
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to get rows from ${tab}: ${res.statusText}`)
   const data = await res.json()
   const values: string[][] = data.values || []
@@ -105,6 +126,7 @@ export async function updateRowById(
       body: JSON.stringify({ values: [rowData] }),
     },
   )
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to update row in ${tab}: ${res.statusText}`)
 }
 
@@ -125,6 +147,7 @@ export async function updateRowByKey(
       body: JSON.stringify({ values: [rowData] }),
     },
   )
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to update row in ${tab}: ${res.statusText}`)
 }
 
@@ -138,6 +161,7 @@ export async function deleteRow(
   const metaRes = await fetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, {
     headers: authHeaders(token),
   })
+  checkRateLimit(metaRes)
   if (!metaRes.ok) throw new Error('Failed to get sheet metadata')
   const meta = await metaRes.json()
   const sheet = meta.sheets?.find((s: { properties: { title: string } }) => s.properties.title === tab)
@@ -160,6 +184,7 @@ export async function deleteRow(
       }],
     }),
   })
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to delete row in ${tab}: ${res.statusText}`)
 }
 
@@ -187,6 +212,7 @@ export async function deleteRowById(
       }],
     }),
   })
+  checkRateLimit(res)
   if (!res.ok) throw new Error(`Failed to delete row in ${tab}: ${res.statusText}`)
 }
 
@@ -199,6 +225,7 @@ export async function batchGet(
   const res = await fetch(`${SHEETS_BASE}/${spreadsheetId}/values:batchGet?${params}`, {
     headers: authHeaders(token),
   })
+  checkRateLimit(res)
   if (!res.ok) throw new Error('Failed to batch get')
   const data = await res.json()
   return (data.valueRanges || []).map((vr: { values?: string[][] }) => vr.values || [])
@@ -212,6 +239,7 @@ export async function getSheetId(
   const res = await fetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, {
     headers: authHeaders(token),
   })
+  checkRateLimit(res)
   if (!res.ok) throw new Error('Failed to get sheet metadata')
   const data = await res.json()
   const sheet = data.sheets?.find((s: { properties: { title: string } }) => s.properties.title === tab)

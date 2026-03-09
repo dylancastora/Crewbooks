@@ -12,6 +12,7 @@ import { MorePage } from './pages/MorePage'
 import { JobDetailPage } from './pages/JobDetailPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
+import { DataProvider } from './context/DataProvider'
 import { ToastProvider } from './components/ui/Toast'
 import type { ReactNode } from 'react'
 
@@ -30,7 +31,7 @@ function AppRoutes() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/privacy-policy" element={<PrivacyPage />} />
       <Route path="/terms-of-service" element={<TermsPage />} />
-      <Route element={<AuthGate><AppShell /></AuthGate>}>
+      <Route element={<AuthGate><DataProvider><AppShell /></DataProvider></AuthGate>}>
         <Route index element={<DashboardPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="jobs/:id" element={<JobDetailPage />} />

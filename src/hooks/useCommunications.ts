@@ -1,26 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getCommunications, createCommunication as createCommApi } from '../services/api/communications'
+import { useDataContext } from '../context/DataProvider'
+import { createCommunication as createCommApi } from '../services/api/communications'
 import type { Communication } from '../types'
 
 export function useCommunications() {
   const { spreadsheetId, getToken } = useAuth()
-  const [communications, setCommunications] = useState<Communication[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const load = useCallback(async () => {
-    if (!spreadsheetId) return
-    setLoading(true)
-    try {
-      const token = await getToken()
-      const data = await getCommunications(spreadsheetId, token)
-      setCommunications(data)
-    } finally {
-      setLoading(false)
-    }
-  }, [spreadsheetId, getToken])
-
-  useEffect(() => { load() }, [load])
+  const { communications, setCommunications, communicationsLoading: loading, reloadCommunications, isRateLimited } = useDataContext()
 
   const getForJob = useCallback((jobId: string) => {
     return communications.filter((c) => c.jobId === jobId)
@@ -28,11 +14,12 @@ export function useCommunications() {
 
   const createCommunication = useCallback(async (data: Omit<Communication, 'id'>) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     const comm = await createCommApi(spreadsheetId, data, token)
     setCommunications((prev) => [...prev, comm])
     return comm
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setCommunications])
 
-  return { communications, getForJob, createCommunication, loading, reload: load }
+  return { communications, getForJob, createCommunication, loading, reload: reloadCommunications }
 }

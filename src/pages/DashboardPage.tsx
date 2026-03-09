@@ -1,11 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useJobs } from '../hooks/useJobs'
 import { useClients } from '../hooks/useClients'
-import { useJobItems } from '../hooks/useJobItems'
-import { useCommunications } from '../hooks/useCommunications'
 import { useJobActions } from '../hooks/useJobActions'
-import { useExpenses } from '../hooks/useExpenses'
+import { useDataContext } from '../context/DataProvider'
 import { Card } from '../components/ui/Card'
 import { Spinner } from '../components/ui/Spinner'
 import { JobCard } from '../components/jobs/JobCard'
@@ -19,12 +16,7 @@ export function DashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>('upcoming')
 
   const { jobs, getPreferredAction, getMenuActions, totalsMap, allExpenses, getItemsForJob, getForJob } = useJobActions()
-  const { loading: itemsLoading } = useJobItems()
-  const { loading: commsLoading } = useCommunications()
-  const { loading: jobsLoading } = useJobs()
-  const { loading: expensesLoading } = useExpenses()
-
-  const loading = jobsLoading || itemsLoading || commsLoading || expensesLoading
+  const { loading } = useDataContext()
 
   if (loading) return <Spinner className="py-12" />
 

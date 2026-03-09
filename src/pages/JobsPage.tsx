@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useClients } from '../hooks/useClients'
-import { useJobItems } from '../hooks/useJobItems'
-import { useCommunications } from '../hooks/useCommunications'
-import { useExpenses } from '../hooks/useExpenses'
 import { useJobActions } from '../hooks/useJobActions'
+import { useDataContext } from '../context/DataProvider'
 import { Button } from '../components/ui/Button'
 import { Select } from '../components/ui/Select'
 import { Spinner } from '../components/ui/Spinner'
@@ -18,12 +16,8 @@ export function JobsPage() {
   const navigate = useNavigate()
   const { clients } = useClients()
   const { jobs, getPreferredAction, getMenuActions, totalsMap, allExpenses, getItemsForJob, getForJob } = useJobActions()
-  const { loading: itemsLoading } = useJobItems()
-  const { loading: commsLoading } = useCommunications()
-  const { loading: expensesLoading } = useExpenses()
+  const { loading } = useDataContext()
   const [filter, setFilter] = useState<string>('All')
-
-  const loading = itemsLoading || commsLoading || expensesLoading
 
   const filteredJobs = filter === 'All'
     ? jobs

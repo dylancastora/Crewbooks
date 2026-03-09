@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useDataContext } from '../context/DataProvider'
 import {
-  getClientsAndContacts,
   createClient as createClientApi,
   updateClient as updateClientApi,
   deleteClient as deleteClientApi,
@@ -13,68 +13,57 @@ import type { Client, Contact } from '../types'
 
 export function useClients() {
   const { spreadsheetId, getToken } = useAuth()
-  const [clients, setClients] = useState<Client[]>([])
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const load = useCallback(async () => {
-    if (!spreadsheetId) return
-    setLoading(true)
-    try {
-      const token = await getToken()
-      const data = await getClientsAndContacts(spreadsheetId, token)
-      setClients(data.clients)
-      setContacts(data.contacts)
-    } finally {
-      setLoading(false)
-    }
-  }, [spreadsheetId, getToken])
-
-  useEffect(() => { load() }, [load])
+  const { clients, setClients, contacts, setContacts, clientsLoading: loading, reloadClients, isRateLimited } = useDataContext()
 
   const createClient = useCallback(async (data: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     const client = await createClientApi(spreadsheetId, data, token)
     setClients((prev) => [...prev, client])
     return client
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setClients])
 
   const updateClient = useCallback(async (client: Client) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     await updateClientApi(spreadsheetId, client, token)
     setClients((prev) => prev.map((c) => c.id === client.id ? client : c))
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setClients])
 
   const deleteClient = useCallback(async (clientId: string) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     await deleteClientApi(spreadsheetId, clientId, token)
     setClients((prev) => prev.filter((c) => c.id !== clientId))
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setClients])
 
   const createContact = useCallback(async (data: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     const contact = await createContactApi(spreadsheetId, data, token)
     setContacts((prev) => [...prev, contact])
     return contact
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setContacts])
 
   const updateContact = useCallback(async (contact: Contact) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     await updateContactApi(spreadsheetId, contact, token)
     setContacts((prev) => prev.map((c) => c.id === contact.id ? contact : c))
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setContacts])
 
   const deleteContact = useCallback(async (contactId: string) => {
     if (!spreadsheetId) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
     const token = await getToken()
     await deleteContactApi(spreadsheetId, contactId, token)
     setContacts((prev) => prev.filter((c) => c.id !== contactId))
-  }, [spreadsheetId, getToken])
+  }, [spreadsheetId, getToken, isRateLimited, setContacts])
 
   const getContactsForClient = useCallback((clientId: string) => {
     return contacts.filter((c) => c.clientId === clientId)
@@ -85,6 +74,6 @@ export function useClients() {
     createClient, updateClient, deleteClient,
     createContact, updateContact, deleteContact,
     getContactsForClient,
-    reload: load,
+    reload: reloadClients,
   }
 }
