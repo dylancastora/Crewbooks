@@ -62,8 +62,9 @@ UI Improvements:
 - Consistent button sizes
 - Modify [+ New Gear rate] and [+ New Labor rate] buttons so they're easily distinguishable from the [+ line item] buttons.
 
-Known Bugs:
-- Intermittent logout/data desync
+Known Issues:
+
+- Intermittent data desync caused by Google Sheets API limits, temporary fix propsed in apiCallsExceedingLimits.md, solves problem up to 30-40 concurrent active users, interim fix requires requesting GCP quota increase (likely enables 300-400 concurrent active users), long term a server side caching layer may be required.
 
 ---
 
