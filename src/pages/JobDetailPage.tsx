@@ -6,6 +6,7 @@ import { useClients } from '../hooks/useClients'
 import { useRates } from '../hooks/useRates'
 import { useSettings } from '../hooks/useSettings'
 import { useExpenses } from '../hooks/useExpenses'
+import { useDataContext } from '../context/DataProvider'
 import { getJobItems, setJobItems } from '../services/api/jobItems'
 import { generateJobNumber } from '../services/api/jobs'
 import { JobStatus, Unit } from '../types'
@@ -34,6 +35,7 @@ export function JobDetailPage() {
   const { labor, equipment, createRate } = useRates()
   const { settings } = useSettings()
   const { expenses, updateExpense } = useExpenses()
+  const { setAllItems } = useDataContext()
   const { showToast } = useToast()
 
   const isNew = id === 'new'
@@ -245,6 +247,7 @@ export function JobDetailPage() {
     }))
 
     let savedJob: Job | undefined
+    let savedItems: JobItem[] = []
 
     if (isNew) {
       const job = await createJob({
@@ -254,7 +257,7 @@ export function JobDetailPage() {
         paymentWindow: parseInt(formData.paymentWindow) || 30,
       }, settings)
       if (job) {
-        await setJobItems(spreadsheetId, job.id, job.jobNumber, fullItems.map((item) => ({
+        savedItems = await setJobItems(spreadsheetId, job.id, job.jobNumber, fullItems.map((item) => ({
           ...item,
           jobId: job.id,
           jobNumber: job.jobNumber,
@@ -264,7 +267,7 @@ export function JobDetailPage() {
     } else if (existingJob) {
       const updatedJob: Job = { ...existingJob, ...formData, title: existingJob.title, taxRate: formData.taxRate, paymentWindow: parseInt(formData.paymentWindow) || 30 }
       await updateJob(updatedJob)
-      await setJobItems(spreadsheetId, existingJob.id, existingJob.jobNumber, fullItems.map((item) => ({
+      savedItems = await setJobItems(spreadsheetId, existingJob.id, existingJob.jobNumber, fullItems.map((item) => ({
         ...item,
         jobId: existingJob.id,
         jobNumber: existingJob.jobNumber,
@@ -284,6 +287,11 @@ export function JobDetailPage() {
       ])
       setPendingLinks([])
       setPendingUnlinks([])
+      // Update items in context so JobCard/totals reflect the saved line items
+      setAllItems((prev) => [
+        ...prev.filter((item) => item.jobId !== savedJob!.id),
+        ...savedItems,
+      ])
     }
 
     return savedJob
