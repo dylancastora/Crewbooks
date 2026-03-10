@@ -1,4 +1,5 @@
-import { getRows } from '../google/sheets'
+import { getRows, appendRow } from '../google/sheets'
+import { DEFAULT_SETTINGS } from './init'
 
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 
@@ -40,7 +41,19 @@ const migrations: SchemaMigration[] = [
   },
 ]
 
+async function conformSettings(spreadsheetId: string, token: string): Promise<void> {
+  const { rows } = await getRows(spreadsheetId, 'Settings', token)
+  const existingKeys = new Set(rows.map((r) => r.key))
+  const missing = DEFAULT_SETTINGS.filter(([key]) => !existingKeys.has(key))
+  for (const [key, value] of missing) {
+    await appendRow(spreadsheetId, 'Settings', [key, value], token)
+  }
+}
+
 export async function conformSchema(spreadsheetId: string, token: string): Promise<void> {
+  // Ensure all default settings exist
+  await conformSettings(spreadsheetId, token)
+
   // Group migrations by tab
   const tabMigrations = new Map<string, SchemaMigration[]>()
   for (const m of migrations) {

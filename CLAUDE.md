@@ -8,12 +8,14 @@ The database lives in Google Sheets. Existing users' spreadsheets must be migrat
 
 ### How it works
 
-`conformSchema()` in `src/services/api/conform.ts` runs **before** data is loaded (called in `src/context/DataProvider.tsx`). It:
+`conformSchema()` in `src/services/api/conform.ts` runs **before** data is loaded (called in `src/context/DataProvider.tsx`). It handles two things:
 
-1. Reads current headers from each tab that has migrations defined
-2. Compares against the expected columns in the `migrations` array
-3. If all columns already exist, returns immediately (no-op — no performance cost)
-4. For tabs with missing columns, inserts them at the correct position, fills default values for every existing row, and writes back the entire tab in a single Sheets API `values:update` PUT
+**Settings rows** — Compares existing Settings keys against `DEFAULT_SETTINGS` from `init.ts` and appends any missing keys with their default values.
+
+**Tab columns** — For each tab with migrations defined:
+1. Reads current headers and compares against the `migrations` array
+2. If all columns already exist, returns immediately (no-op — no performance cost)
+3. For tabs with missing columns, inserts them at the correct position, fills default values for every existing row, and writes back the entire tab in a single Sheets API `values:update` PUT
 
 ### Checklist: Adding a new column
 
@@ -25,7 +27,7 @@ Any change that alters the data schema **must** touch all of these:
    ```
    `defaultValue` can be a string or a function `(row, context) => string` for computed defaults. If the function needs data from another tab, add it to `MigrationContext`.
 
-2. **`src/services/api/init.ts`** — Add the column to the `TABS` object so new workspaces get it from the start. If the feature has a user-configurable default, add a row to `DEFAULT_SETTINGS`.
+2. **`src/services/api/init.ts`** — Add the column to the `TABS` object so new workspaces get it from the start. If the feature has a user-configurable default, add a row to `DEFAULT_SETTINGS` (existing users get it automatically via settings conformance).
 
 3. **`src/types/index.ts`** — Add the field to the relevant TypeScript interface (e.g. `Job`, `Client`).
 

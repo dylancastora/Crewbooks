@@ -15,7 +15,7 @@ const TABS = {
   Settings: ['key', 'value'],
 }
 
-const DEFAULT_SETTINGS = [
+export const DEFAULT_SETTINGS = [
   ['mileageRate', '0.725'],
   ['defaultPaymentTerms', 'Net 30'],
   ['defaultPaymentWindow', '30'],
