@@ -7,7 +7,6 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Select } from '../components/ui/Select'
 import { Spinner } from '../components/ui/Spinner'
-import { EmptyState } from '../components/ui/EmptyState'
 import { JobCard } from '../components/jobs/JobCard'
 import { JobStatus } from '../types'
 
