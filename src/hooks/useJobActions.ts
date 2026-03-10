@@ -140,7 +140,10 @@ export function useJobActions(onComplete?: () => void) {
       priorCommunicationId: actualIsResend ? priorComms[priorComms.length - 1].id : '',
     })
 
-    const updated = { ...job, status: JobStatus.Invoiced, updatedAt: new Date().toISOString() }
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + (job.paymentWindow || 30))
+    const dueDateStr = dueDate.toISOString().split('T')[0]
+    const updated = { ...job, status: JobStatus.Invoiced, dueDate: dueDateStr, updatedAt: new Date().toISOString() }
     await updateJob(updated)
     onComplete?.()
   }, [spreadsheetId, getToken, getItemsForJob, clients, contacts, settings, getForJob, createCommunication, updateJob, onComplete])

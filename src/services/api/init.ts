@@ -8,7 +8,7 @@ const TABS = {
   Contacts: ['id', 'clientId', 'name', 'email', 'phone', 'role', 'createdAt', 'updatedAt'],
   Labor: ['id', 'name', 'rate', 'unit', 'taxable', 'isActive', 'createdAt', 'updatedAt'],
   Equipment: ['id', 'name', 'rate', 'unit', 'taxable', 'isActive', 'createdAt', 'updatedAt'],
-  Jobs: ['id', 'jobNumber', 'clientId', 'title', 'status', 'contactIds', 'shootDates', 'taxRate', 'paymentTerms', 'notes', 'cancelled', 'createdAt', 'updatedAt'],
+  Jobs: ['id', 'jobNumber', 'clientId', 'title', 'status', 'contactIds', 'shootDates', 'taxRate', 'paymentTerms', 'paymentWindow', 'dueDate', 'notes', 'cancelled', 'createdAt', 'updatedAt'],
   JobItems: ['id', 'jobId', 'jobNumber', 'type', 'description', 'date', 'quantity', 'rate', 'taxable', 'sortOrder', 'amount'],
   Expenses: ['id', 'jobId', 'clientId', 'description', 'amount', 'date', 'category', 'receiptFileId', 'receiptFileName', 'billed', 'createdAt', 'updatedAt'],
   Communications: ['id', 'jobId', 'type', 'dateSent', 'recipients', 'amount', 'subject', 'notes', 'isResend', 'priorCommunicationId'],
@@ -18,6 +18,7 @@ const TABS = {
 const DEFAULT_SETTINGS = [
   ['mileageRate', '0.725'],
   ['defaultPaymentTerms', 'Net 30'],
+  ['defaultPaymentWindow', '30'],
   ['defaultTaxRate', '10'],
   ['businessName', ''],
   ['businessAddress', ''],

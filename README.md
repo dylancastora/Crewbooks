@@ -51,7 +51,6 @@ No data ever touches a third-party server.
 
 Features:
 - Save Invoice PDFs in Google Drive, with a unique reference to the communication that generated it
-- Due date system
 - Keep me signed in
 - Google calendar integration
 - Data import/migration
@@ -59,7 +58,6 @@ Features:
 - Reject user after auth if all data scopes not agreed to
 
 UI Improvements:
-- Consistent button sizes
 - Modify [+ New Gear rate] and [+ New Labor rate] buttons so they're easily distinguishable from the [+ line item] buttons.
 
 Known Issues:
@@ -67,6 +65,7 @@ Known Issues:
 - Intermittent data desync caused by Google Sheets API limits, temporary fix applied solves problem up to 30-40 concurrent active users
   - Interim fix requires requesting GCP quota increase (likely enables 300-400 concurrent active users)
   - Long term a server side caching layer may be required.
+- If a job is mark paid, and then the paid status is revoked, the jobs status is set to invoiced (even if no invoice has been sent).  When this happens, we should review the job's communications to confirm if an invoice has been sent.  If it hasn't, the job should be set to the state it was prior to being marked as paid -- This will likely require a new field in the job called something like "State before Paid".
 
 ---
 

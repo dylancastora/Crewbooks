@@ -11,6 +11,7 @@ interface JobFormData {
   contactIds: string
   shootDates: string
   paymentTerms: string
+  paymentWindow: string
   notes: string
   jobNumber: string
 }
@@ -163,6 +164,13 @@ export function JobForm({ data, onChange, clients, contacts, bookedDates, create
         label="Payment Terms"
         value={data.paymentTerms}
         onChange={(e) => onChange({ ...data, paymentTerms: e.target.value })}
+        autoComplete="off"
+      />
+      <Input
+        label="Payment Window (days)"
+        type="number"
+        value={data.paymentWindow}
+        onChange={(e) => onChange({ ...data, paymentWindow: e.target.value })}
         autoComplete="off"
       />
       <Input

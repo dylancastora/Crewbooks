@@ -156,6 +156,11 @@ export function generateInvoiceHtml(
       ${buildLineItemsHtml(job, items, expenses, totals)}
 
       <p style="margin-top: 20px;"><strong>Payment Terms:</strong> ${escapeHtml(job.paymentTerms)}</p>
+      ${(() => {
+        const due = new Date()
+        due.setDate(due.getDate() + (job.paymentWindow || 30))
+        return `<p><strong>Due Date:</strong> ${due.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>`
+      })()}
       ${job.notes ? `<p style="color: #666;"><strong>Notes:</strong> ${escapeHtml(job.notes)}</p>` : ''}
 
       <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;" />

@@ -45,6 +45,7 @@ export function JobDetailPage() {
     contactIds: '',
     shootDates: '',
     paymentTerms: settings.defaultPaymentTerms || 'Net 30',
+    paymentWindow: settings.defaultPaymentWindow || '30',
     notes: '',
     jobNumber: '',
     taxRate: defaultTaxRate,
@@ -59,7 +60,7 @@ export function JobDetailPage() {
   const initialLoadDone = useRef(false)
 
   // Track changes after initial load
-  const handleFormChange = useCallback((data: { clientId: string; contactIds: string; shootDates: string; paymentTerms: string; notes: string; jobNumber: string }) => {
+  const handleFormChange = useCallback((data: { clientId: string; contactIds: string; shootDates: string; paymentTerms: string; paymentWindow: string; notes: string; jobNumber: string }) => {
     setFormData((prev) => ({ ...prev, ...data }))
     if (initialLoadDone.current) setIsDirty(true)
   }, [])
@@ -139,6 +140,7 @@ export function JobDetailPage() {
         contactIds: existingJob.contactIds,
         shootDates: existingJob.shootDates,
         paymentTerms: existingJob.paymentTerms,
+        paymentWindow: String(existingJob.paymentWindow),
         notes: existingJob.notes,
         jobNumber: existingJob.jobNumber,
         taxRate: existingJob.taxRate || defaultTaxRate,
@@ -249,6 +251,7 @@ export function JobDetailPage() {
         ...formData,
         title: '',
         taxRate: formData.taxRate,
+        paymentWindow: parseInt(formData.paymentWindow) || 30,
       }, settings)
       if (job) {
         await setJobItems(spreadsheetId, job.id, job.jobNumber, fullItems.map((item) => ({
@@ -259,7 +262,7 @@ export function JobDetailPage() {
         savedJob = job
       }
     } else if (existingJob) {
-      const updatedJob: Job = { ...existingJob, ...formData, title: existingJob.title, taxRate: formData.taxRate }
+      const updatedJob: Job = { ...existingJob, ...formData, title: existingJob.title, taxRate: formData.taxRate, paymentWindow: parseInt(formData.paymentWindow) || 30 }
       await updateJob(updatedJob)
       await setJobItems(spreadsheetId, existingJob.id, existingJob.jobNumber, fullItems.map((item) => ({
         ...item,

@@ -9,6 +9,7 @@ import { getCommunications } from '../services/api/communications'
 import { getSettings } from '../services/api/settings'
 import { getRates } from '../services/api/rates'
 import { setRateLimitCallback } from '../services/google/sheets'
+import { conformSchema } from '../services/api/conform'
 import type { Job, Client, Contact, Expense, JobItem, Communication, Settings, LaborRate, EquipmentRate } from '../types'
 
 interface RateLimitState {
@@ -216,10 +217,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ])
   }, [reloadJobs, reloadClients, reloadExpenses, reloadItems, reloadCommunications, reloadSettings, reloadRates])
 
-  // Initial load on mount
+  // Initial load on mount — conform schema first, then load data
   useEffect(() => {
     if (spreadsheetId) {
-      reloadAll()
+      getToken().then((token) => conformSchema(spreadsheetId, token)).then(() => reloadAll())
     }
   }, [spreadsheetId]) // eslint-disable-line react-hooks/exhaustive-deps
 

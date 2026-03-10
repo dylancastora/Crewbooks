@@ -12,6 +12,7 @@ const fields = [
   { key: 'businessEmail', label: 'Business Email', type: 'email', autoComplete: 'email' },
   { key: 'mileageRate', label: 'Mileage Rate ($/mi)', type: 'number', autoComplete: 'off' },
   { key: 'defaultPaymentTerms', label: 'Default Payment Terms', type: 'text', autoComplete: 'off' },
+  { key: 'defaultPaymentWindow', label: 'Default Payment Window (days)', type: 'number', autoComplete: 'off' },
   { key: 'defaultTaxRate', label: 'Default Sales Tax Rate (%)', type: 'number', autoComplete: 'off' },
 ] as const
 

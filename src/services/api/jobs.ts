@@ -10,12 +10,13 @@ function now(): string {
   return new Date().toISOString()
 }
 
-const JOB_HEADERS = ['id', 'jobNumber', 'clientId', 'title', 'status', 'contactIds', 'shootDates', 'taxRate', 'paymentTerms', 'notes', 'cancelled', 'createdAt', 'updatedAt']
+const JOB_HEADERS = ['id', 'jobNumber', 'clientId', 'title', 'status', 'contactIds', 'shootDates', 'taxRate', 'paymentTerms', 'paymentWindow', 'dueDate', 'notes', 'cancelled', 'createdAt', 'updatedAt']
 
 function rowToJob(row: Record<string, string>): Job {
   return {
     ...row,
     taxRate: parseFloat(row.taxRate) || 0,
+    paymentWindow: parseInt(row.paymentWindow) || 30,
     cancelled: row.cancelled === 'true',
   } as unknown as Job
 }
@@ -52,6 +53,8 @@ export async function createJob(
     shootDates: data.shootDates || '',
     taxRate: data.taxRate ?? 0,
     paymentTerms: data.paymentTerms || settings.defaultPaymentTerms || 'Net 30',
+    paymentWindow: data.paymentWindow ?? (parseInt(settings.defaultPaymentWindow || '30') || 30),
+    dueDate: '',
     notes: data.notes || '',
     cancelled: false,
     createdAt: now(),

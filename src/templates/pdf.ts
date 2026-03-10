@@ -65,6 +65,11 @@ export function generateJobPDF(
   if (job.shootDates) { doc.text(`Shoot Dates: ${job.shootDates}`, 14, y); y += 5 }
   if (job.paymentTerms) { doc.text(`Payment Terms: ${job.paymentTerms}`, 14, y); y += 5 }
   if (invoiceDate) { doc.text(`Invoice Issued: ${invoiceDate}`, 14, y); y += 5 }
+  {
+    const due = new Date()
+    due.setDate(due.getDate() + (job.paymentWindow || 30))
+    doc.text(`Due Date: ${due.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`, 14, y); y += 5
+  }
   y += 5
 
   const shootDays = computeShootDays(job.shootDates)

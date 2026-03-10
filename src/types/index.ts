@@ -89,6 +89,8 @@ export interface Job {
   shootDates: string
   taxRate: number
   paymentTerms: string
+  paymentWindow: number
+  dueDate: string
   notes: string
   cancelled: boolean
   createdAt: string

@@ -4,6 +4,7 @@ import { DropdownMenu } from '../ui/DropdownMenu'
 import { JobStatusBadge } from './JobStatusBadge'
 import { CommunicationsLog } from './CommunicationsLog'
 import { formatDate } from '../../utils/formatDate'
+import { JobStatus } from '../../types'
 import type { Job, JobItem, JobTotals, Communication, Expense } from '../../types'
 
 interface PreferredAction {
@@ -66,6 +67,9 @@ export function JobCard({ job, clientName, totals, items, expenses, communicatio
               <span className="font-medium">#{job.jobNumber}</span>
               <JobStatusBadge status={job.status} />
               {job.cancelled && <JobStatusBadge status="cancelled" />}
+              {job.status === JobStatus.Invoiced && job.dueDate && job.dueDate < new Date().toISOString().split('T')[0] && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Late</span>
+              )}
             </div>
             <span className="font-semibold">{formatCurrency(totals.total)}</span>
           </div>
@@ -74,6 +78,9 @@ export function JobCard({ job, clientName, totals, items, expenses, communicatio
             <p className="text-xs text-gray-400 mt-1">
               {job.shootDates.split(',').map((d) => formatDate(d.trim())).join(', ')}
             </p>
+          )}
+          {job.status === JobStatus.Invoiced && job.dueDate && (
+            <p className="text-xs text-gray-400 mt-1">Due: {formatDate(job.dueDate)}</p>
           )}
         </div>
         <div className="flex items-center justify-end gap-2 mt-3">
