@@ -20,11 +20,12 @@ interface JobFormProps {
   onChange: (data: JobFormData) => void
   clients: Client[]
   contacts: Contact[]
+  bookedDates?: string[]
   createClient?: (data: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Client | undefined>
   createContact?: (data: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Contact | undefined>
 }
 
-export function JobForm({ data, onChange, clients, contacts, createClient, createContact }: JobFormProps) {
+export function JobForm({ data, onChange, clients, contacts, bookedDates, createClient, createContact }: JobFormProps) {
   const clientContacts = contacts.filter((c) => c.clientId === data.clientId)
   const selectedContactIds = data.contactIds ? data.contactIds.split(',').filter(Boolean) : []
 
@@ -156,6 +157,7 @@ export function JobForm({ data, onChange, clients, contacts, createClient, creat
         label="Shoot Dates"
         selectedDates={shootDateArray}
         onChange={(dates) => onChange({ ...data, shootDates: dates.join(', ') })}
+        bookedDates={bookedDates}
       />
       <Input
         label="Payment Terms"

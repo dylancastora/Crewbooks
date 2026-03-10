@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../hooks/useJobs'
@@ -15,6 +15,7 @@ import { JobSummary } from '../components/jobs/JobSummary'
 import { Spinner } from '../components/ui/Spinner'
 import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
+import { formatDate as formatDateDisplay } from '../utils/formatDate'
 import type { Job, JobItem, Expense } from '../types'
 
 type PartialItem = Omit<JobItem, 'id' | 'jobId' | 'jobNumber' | 'sortOrder' | 'amount'>
@@ -68,6 +69,9 @@ export function JobDetailPage() {
   }, [])
 
   const [showLeaveModal, setShowLeaveModal] = useState(false)
+  const [showConflictModal, setShowConflictModal] = useState(false)
+  const [conflicts, setConflicts] = useState<{ date: string; jobNumber: string; clientName: string }[]>([])
+  const skipConflictCheck = useRef(false)
 
   // Unsaved changes guard — tab close / refresh
   useEffect(() => {
@@ -89,6 +93,30 @@ export function JobDetailPage() {
   const shootDays = formData.shootDates
     ? formData.shootDates.split(',').map((d) => d.trim()).filter(Boolean).length
     : 0
+
+  // Dates booked by other (non-cancelled) jobs
+  const bookedDates = useMemo(() => {
+    const dates = new Set<string>()
+    jobs.forEach((j) => {
+      if (j.id === existingJob?.id || j.cancelled) return
+      j.shootDates.split(',').map((d) => d.trim()).filter(Boolean).forEach((d) => dates.add(d))
+    })
+    return Array.from(dates)
+  }, [jobs, existingJob?.id])
+
+  // Map of booked date → conflicting jobs (for the warning modal)
+  const bookedDateMap = useMemo(() => {
+    const map = new Map<string, { jobNumber: string; clientName: string }[]>()
+    jobs.forEach((j) => {
+      if (j.id === existingJob?.id || j.cancelled) return
+      const client = clients.find((c) => c.id === j.clientId)
+      j.shootDates.split(',').map((d) => d.trim()).filter(Boolean).forEach((d) => {
+        const entry = { jobNumber: j.jobNumber, clientName: client?.company || 'Unknown' }
+        map.set(d, [...(map.get(d) || []), entry])
+      })
+    })
+    return map
+  }, [jobs, existingJob?.id, clients])
 
   // Set job number for new jobs once jobs list has loaded
   useEffect(() => {
@@ -184,6 +212,22 @@ export function JobDetailPage() {
       return
     }
 
+    // Schedule conflict check
+    if (!skipConflictCheck.current) {
+      const selectedDates = formData.shootDates ? formData.shootDates.split(',').map((d) => d.trim()).filter(Boolean) : []
+      const found: { date: string; jobNumber: string; clientName: string }[] = []
+      selectedDates.forEach((d) => {
+        const entries = bookedDateMap.get(d)
+        if (entries) entries.forEach((e) => found.push({ date: d, ...e }))
+      })
+      if (found.length > 0) {
+        setConflicts(found)
+        setShowConflictModal(true)
+        return
+      }
+    }
+    skipConflictCheck.current = false
+
     const token = await getToken()
 
     // Build full items with days multiplied in for storage
@@ -276,6 +320,7 @@ export function JobDetailPage() {
           onChange={handleFormChange}
           clients={clients}
           contacts={contacts}
+          bookedDates={bookedDates}
           createClient={createClient}
           createContact={createContact}
         />
@@ -327,6 +372,31 @@ export function JobDetailPage() {
             className="flex-1 bg-gray-200 text-gray-700 rounded-lg py-2 font-medium min-h-[44px] hover:bg-gray-300"
           >
             Leave
+          </button>
+        </div>
+      </Modal>
+
+      <Modal open={showConflictModal} onClose={() => setShowConflictModal(false)} title="Schedule Conflict">
+        <p className="text-gray-600 mb-3">The following dates overlap with existing jobs:</p>
+        <ul className="space-y-1 mb-4">
+          {conflicts.map((c, i) => (
+            <li key={i} className="text-sm text-gray-700">
+              <span className="font-medium">{formatDateDisplay(c.date)}</span> — Job #{c.jobNumber} ({c.clientName})
+            </li>
+          ))}
+        </ul>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowConflictModal(false)}
+            className="flex-1 bg-gray-200 text-gray-700 rounded-lg py-2 font-medium min-h-[44px] hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { setShowConflictModal(false); skipConflictCheck.current = true; handleSave() }}
+            className="flex-1 bg-primary text-white rounded-lg py-2 font-medium min-h-[44px] hover:bg-primary-dark"
+          >
+            Save Anyway
           </button>
         </div>
       </Modal>

@@ -5,6 +5,7 @@ interface DatePickerProps {
   selectedDates: string[]
   onChange: (dates: string[]) => void
   label?: string
+  bookedDates?: string[]
 }
 
 function getDaysInMonth(year: number, month: number): number {
@@ -22,7 +23,7 @@ function formatDate(year: number, month: number, day: number): string {
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const DAY_HEADERS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
-export function DatePicker({ selectedDates, onChange, label }: DatePickerProps) {
+export function DatePicker({ selectedDates, onChange, label, bookedDates = [] }: DatePickerProps) {
   const today = new Date()
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -73,6 +74,7 @@ export function DatePicker({ selectedDates, onChange, label }: DatePickerProps) 
             if (day === null) return <div key={`e-${i}`} />
             const dateStr = formatDate(viewYear, viewMonth, day)
             const isSelected = selectedDates.includes(dateStr)
+            const isBooked = bookedDates.includes(dateStr)
             return (
               <button
                 key={dateStr}
@@ -81,7 +83,9 @@ export function DatePicker({ selectedDates, onChange, label }: DatePickerProps) 
                 className={`w-full aspect-square flex items-center justify-center text-sm rounded-full min-h-[36px] transition-colors ${
                   isSelected
                     ? 'bg-primary text-white font-medium'
-                    : 'hover:bg-gray-100 text-gray-700'
+                    : isBooked
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'hover:bg-gray-100 text-gray-700'
                 }`}
               >
                 {day}
