@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
 
 const navItems = [
-  { to: '/', label: 'Home', icon: '⌂' },
-  { to: '/jobs', label: 'Jobs', icon: '◫' },
+  { to: '/', label: 'Jobs', icon: '◫' },
   { to: '/clients', label: 'Clients', icon: '⊡' },
   { to: '/expenses', label: 'Expenses', icon: '⊘' },
+  { to: '/rates', label: 'Rates', icon: '$' },
   { to: '/more', label: 'More', icon: '⋯' },
 ]
 

@@ -64,7 +64,9 @@ UI Improvements:
 
 Known Issues:
 
-- Intermittent data desync caused by Google Sheets API limits, temporary fix propsed in apiCallsExceedingLimits.md, solves problem up to 30-40 concurrent active users, interim fix requires requesting GCP quota increase (likely enables 300-400 concurrent active users), long term a server side caching layer may be required.
+- Intermittent data desync caused by Google Sheets API limits, temporary fix applied solves problem up to 30-40 concurrent active users
+  - Interim fix requires requesting GCP quota increase (likely enables 300-400 concurrent active users)
+  - Long term a server side caching layer may be required.
 
 ---
 

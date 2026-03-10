@@ -85,7 +85,7 @@ export function JobDetailPage() {
     if (isDirty) {
       setShowLeaveModal(true)
     } else {
-      navigate('/jobs')
+      navigate('/')
     }
   }, [isDirty, navigate])
 
@@ -293,7 +293,7 @@ export function JobDetailPage() {
       if (saved) {
         setIsDirty(false)
         showToast(isNew ? `Job #${saved.jobNumber} created` : `Job #${saved.jobNumber} saved`)
-        navigate('/jobs', { replace: true })
+        navigate('/', { replace: true })
       }
     } finally {
       setSaving(false)
@@ -368,7 +368,7 @@ export function JobDetailPage() {
             Stay
           </button>
           <button
-            onClick={() => { setIsDirty(false); setShowLeaveModal(false); navigate('/jobs') }}
+            onClick={() => { setIsDirty(false); setShowLeaveModal(false); navigate('/') }}
             className="flex-1 bg-gray-200 text-gray-700 rounded-lg py-2 font-medium min-h-[44px] hover:bg-gray-300"
           >
             Leave

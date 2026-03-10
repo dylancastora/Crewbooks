@@ -59,9 +59,6 @@ export function MorePage() {
         </Card>
       )}
       <div className="space-y-2">
-        <Link to="/rates" className="block">
-          <Card>Rates</Card>
-        </Link>
         <Link to="/settings" className="block">
           <Card>Settings</Card>
         </Link>

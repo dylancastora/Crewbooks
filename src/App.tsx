@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppShell } from './components/layout/AppShell'
 import { LoginPage } from './pages/LoginPage'
-import { DashboardPage } from './pages/DashboardPage'
 import { JobsPage } from './pages/JobsPage'
 import { ClientsPage } from './pages/ClientsPage'
 import { RatesPage } from './pages/RatesPage'
@@ -32,8 +31,7 @@ function AppRoutes() {
       <Route path="/privacy-policy" element={<PrivacyPage />} />
       <Route path="/terms-of-service" element={<TermsPage />} />
       <Route element={<AuthGate><DataProvider><AppShell /></DataProvider></AuthGate>}>
-        <Route index element={<DashboardPage />} />
-        <Route path="jobs" element={<JobsPage />} />
+        <Route index element={<JobsPage />} />
         <Route path="jobs/:id" element={<JobDetailPage />} />
         <Route path="clients" element={<ClientsPage />} />
         <Route path="rates" element={<RatesPage />} />

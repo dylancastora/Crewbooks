@@ -9,8 +9,7 @@ import { Button } from '../ui/Button'
 import { useToast } from '../ui/Toast'
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: '⌂' },
-  { to: '/jobs', label: 'Jobs', icon: '◫' },
+  { to: '/', label: 'Jobs', icon: '◫' },
   { to: '/clients', label: 'Clients', icon: '⊡' },
   { to: '/expenses', label: 'Expenses', icon: '⊘' },
   { to: '/rates', label: 'Rates', icon: '$' },
