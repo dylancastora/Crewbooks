@@ -31,7 +31,7 @@ export function LoginPage() {
             </svg>
           </div>
         </>
-        <p className="text-gray-500 italic mb-8">A lightweight operations manager<br />for filmmakers</p>
+        <p className="text-gray-500 italic mb-8">Bookkeeping and invoicing for film industry freelancers</p>
         <ul className="text-gray-500 mb-8 list space-y-3">
             <li>Free and&nbsp;
             <a
