@@ -40,8 +40,8 @@ export function LoginPage() {
               target="_blank" rel="noopener noreferrer"
               >Open Source</a>
             </li>
+            <li>Privacy focused, no data lock-in</li>
             <li>Track clients, jobs, expenses, rates, quotes and invoices</li>
-            <li>Your data lives entirely inside your Google Workspace, under your control</li>
         </ul>
         {isLoading ? (
             <Spinner className="py-4" />
@@ -51,6 +51,10 @@ export function LoginPage() {
             </Button>
         )}
         </div>
+      <div className="mt-8 bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
+        <h2 className="font-semibold text-gray-800 mb-3">How Crewbooks Works</h2>
+        <p className="text-gray-500">Crewbooks creates a spreadsheet in your Google Drive to use as its database, stores receipt photos in your Drive, and sends quotes and invoices from your Gmail. No data ever touches a third-party server — everything stays in your Google account.</p>
+      </div>
       <div className="mt-8 text-center">
         <p className="text-gray-500">Created by&nbsp;
           <a
