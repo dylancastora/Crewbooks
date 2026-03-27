@@ -1,10 +1,10 @@
-import { getRows, appendRow, getSheetId } from '../google/sheets'
+import { getRows, appendRow, batchGet } from '../google/sheets'
 import { DEFAULT_SETTINGS } from './init'
 
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 
-// Current version — bump when formatting/protection config changes
-const SHEET_FORMAT_VERSION = '1'
+// Bump when formatting/protection/validation config changes
+const SHEET_FORMAT_VERSION = '4'
 
 interface MigrationContext {
   communications: Record<string, string>[]
@@ -80,8 +80,128 @@ const LOCKED_COLUMNS: Record<string, string[]> = {
 
 const ALL_TABS = ['Clients', 'Contacts', 'Labor', 'Equipment', 'Jobs', 'JobItems', 'Expenses', 'Communications', 'Settings']
 
+// --- Data validation rule definitions ---
+
+type ValidationRule =
+  | { tab: string; column: string; type: 'enum'; values: string[] }
+  | { tab: string; column: string; type: 'number' }
+  | { tab: string; column: string; type: 'formula'; formula: string }
+
+function enumFormula(values: string[]): string {
+  const s = 'INDIRECT(ADDRESS(ROW(),COLUMN()))'
+  const options = values.map((v) => `${s}="${v}"`).join(',')
+  return `=OR(${options},${s}="")`
+}
+
+const UUID_RE = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+const NUMBER_RE = '^-?\\d+\\.?\\d*$'
+const DATE_RE = '^\\d{4}-\\d{2}-\\d{2}$'
+const DATES_CSV_RE = '^\\d{4}-\\d{2}-\\d{2}(,\\s*\\d{4}-\\d{2}-\\d{2})*$'
+const TIMESTAMP_RE = '^\\d{4}-\\d{2}-\\d{2}T'
+const UUIDS_CSV_RE = '^[0-9a-f-]+(,[0-9a-f-]+)*$'
+
+function selfRefFormula(pattern: string): string {
+  const s = 'INDIRECT(ADDRESS(ROW(),COLUMN()))'
+  return `=OR(REGEXMATCH(${s},"${pattern}"),${s}="")`
+}
+
+const VALIDATION_RULES: ValidationRule[] = [
+  // Booleans (as text dropdowns)
+  { tab: 'Jobs', column: 'cancelled', type: 'enum', values: ['true', 'false'] },
+  { tab: 'JobItems', column: 'taxable', type: 'enum', values: ['true', 'false'] },
+  { tab: 'Expenses', column: 'billed', type: 'enum', values: ['true', 'false'] },
+  { tab: 'Communications', column: 'isResend', type: 'enum', values: ['true', 'false'] },
+  { tab: 'Labor', column: 'taxable', type: 'enum', values: ['true', 'false'] },
+  { tab: 'Labor', column: 'isActive', type: 'enum', values: ['true', 'false'] },
+  { tab: 'Equipment', column: 'taxable', type: 'enum', values: ['true', 'false'] },
+  { tab: 'Equipment', column: 'isActive', type: 'enum', values: ['true', 'false'] },
+  // Enums
+  { tab: 'Jobs', column: 'status', type: 'enum', values: ['draft', 'quoted', 'approved', 'invoiced', 'paid'] },
+  { tab: 'JobItems', column: 'type', type: 'enum', values: ['labor', 'equipment', 'mileage', 'custom'] },
+  { tab: 'Expenses', column: 'category', type: 'enum', values: ['Fuel', 'Meals', 'Equipment', 'Supplies', 'Rentals', 'Parking', 'Other'] },
+  { tab: 'Communications', column: 'type', type: 'enum', values: ['quote', 'invoice'] },
+  { tab: 'Labor', column: 'unit', type: 'enum', values: ['hour', 'day', 'week', 'flat'] },
+  { tab: 'Equipment', column: 'unit', type: 'enum', values: ['hour', 'day', 'week', 'flat'] },
+  // Numbers
+  ...['taxRate', 'paymentWindow'].map((c): ValidationRule => ({ tab: 'Jobs', column: c, type: 'number' })),
+  ...['days', 'quantity', 'rate', 'amount', 'sortOrder'].map((c): ValidationRule => ({ tab: 'JobItems', column: c, type: 'number' })),
+  { tab: 'Expenses', column: 'amount', type: 'number' },
+  { tab: 'Communications', column: 'amount', type: 'number' },
+  { tab: 'Labor', column: 'rate', type: 'number' },
+  { tab: 'Equipment', column: 'rate', type: 'number' },
+  // UUIDs
+  ...['Clients', 'Contacts', 'Labor', 'Equipment', 'Jobs', 'JobItems', 'Expenses', 'Communications'].map(
+    (tab): ValidationRule => ({ tab, column: 'id', type: 'formula', formula: selfRefFormula(UUID_RE) }),
+  ),
+  { tab: 'Jobs', column: 'clientId', type: 'formula', formula: selfRefFormula(UUID_RE) },
+  { tab: 'Contacts', column: 'clientId', type: 'formula', formula: selfRefFormula(UUID_RE) },
+  { tab: 'JobItems', column: 'jobId', type: 'formula', formula: selfRefFormula(UUID_RE) },
+  { tab: 'Expenses', column: 'jobId', type: 'formula', formula: selfRefFormula(UUID_RE) },
+  { tab: 'Expenses', column: 'clientId', type: 'formula', formula: selfRefFormula(UUID_RE) },
+  { tab: 'Communications', column: 'jobId', type: 'formula', formula: selfRefFormula(UUID_RE) },
+  { tab: 'Communications', column: 'priorCommunicationId', type: 'formula', formula: selfRefFormula(UUID_RE) },
+  { tab: 'Jobs', column: 'contactIds', type: 'formula', formula: selfRefFormula(UUIDS_CSV_RE) },
+  // Dates
+  { tab: 'Jobs', column: 'dueDate', type: 'formula', formula: selfRefFormula(DATE_RE) },
+  { tab: 'Expenses', column: 'date', type: 'formula', formula: selfRefFormula(DATE_RE) },
+  { tab: 'Communications', column: 'dateSent', type: 'formula', formula: selfRefFormula(TIMESTAMP_RE) },
+  { tab: 'Jobs', column: 'shootDates', type: 'formula', formula: selfRefFormula(DATES_CSV_RE) },
+  // Timestamps
+  ...['Clients', 'Contacts', 'Labor', 'Equipment', 'Jobs', 'Expenses'].flatMap(
+    (tab) => ['createdAt', 'updatedAt'].map((col): ValidationRule => ({
+      tab, column: col, type: 'formula', formula: selfRefFormula(TIMESTAMP_RE),
+    })),
+  ),
+]
+
+// --- Helpers ---
+
 function authHeaders(token: string): Record<string, string> {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+}
+
+/** Fetch sheetId map + existing protected ranges in one call */
+async function getSheetMeta(spreadsheetId: string, token: string): Promise<{
+  sheetMap: Record<string, number>
+  existingProtections: { protectedRangeId: number; warningOnly: boolean }[]
+}> {
+  const res = await fetch(
+    `${SHEETS_BASE}/${spreadsheetId}?fields=sheets(properties,protectedRanges)`,
+    { headers: authHeaders(token) },
+  )
+  if (!res.ok) throw new Error('Failed to get sheet metadata')
+  const data = await res.json()
+  const sheetMap: Record<string, number> = {}
+  const existingProtections: { protectedRangeId: number; warningOnly: boolean }[] = []
+  for (const sheet of data.sheets || []) {
+    sheetMap[sheet.properties.title] = sheet.properties.sheetId
+    for (const pr of sheet.protectedRanges || []) {
+      existingProtections.push({ protectedRangeId: pr.protectedRangeId, warningOnly: pr.warningOnly })
+    }
+  }
+  return { sheetMap, existingProtections }
+}
+
+/** Read all tab headers in a single batchGet call */
+async function getAllHeaders(spreadsheetId: string, token: string): Promise<Map<string, string[]>> {
+  const ranges = ALL_TABS.map((tab) => `${tab}!1:1`)
+  const results = await batchGet(spreadsheetId, ranges, token)
+  const headerMap = new Map<string, string[]>()
+  ALL_TABS.forEach((tab, i) => {
+    headerMap.set(tab, results[i]?.[0] || [])
+  })
+  return headerMap
+}
+
+function buildValidationCondition(rule: ValidationRule): unknown {
+  if (rule.type === 'enum') {
+    return { type: 'CUSTOM_FORMULA', values: [{ userEnteredValue: enumFormula(rule.values) }] }
+  } else if (rule.type === 'number') {
+    const s = 'INDIRECT(ADDRESS(ROW(),COLUMN()))'
+    return { type: 'CUSTOM_FORMULA', values: [{ userEnteredValue: `=OR(REGEXMATCH(TO_TEXT(${s}),"${NUMBER_RE}"),${s}="")` }] }
+  } else {
+    return { type: 'CUSTOM_FORMULA', values: [{ userEnteredValue: rule.formula }] }
+  }
 }
 
 // --- Settings conformance ---
@@ -165,43 +285,42 @@ async function conformColumns(spreadsheetId: string, token: string): Promise<voi
   }
 }
 
-// --- Column deletions ---
+// --- Combined formatting, protections, validation, column deletions ---
 
-async function conformColumnDeletions(spreadsheetId: string, token: string): Promise<void> {
-  for (const { tab, column } of columnDeletions) {
-    const { headers } = await getRows(spreadsheetId, tab, token)
-    const colIdx = headers.indexOf(column)
-    if (colIdx < 0) continue // already deleted
-
-    const sheetId = await getSheetId(spreadsheetId, tab, token)
-    await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
-      method: 'POST',
-      headers: authHeaders(token),
-      body: JSON.stringify({
-        requests: [{
-          deleteDimension: {
-            range: { sheetId, dimension: 'COLUMNS', startIndex: colIdx, endIndex: colIdx + 1 },
-          },
-        }],
-      }),
-    })
-  }
-}
-
-// --- Formatting: header styles + locked column grey text ---
-
-async function conformFormatting(
+async function conformSheetPresentation(
   spreadsheetId: string,
   token: string,
-  sheetMap: Record<string, number>,
 ): Promise<void> {
+  // 1. Get sheet metadata + existing protections (1 API call)
+  const { sheetMap, existingProtections } = await getSheetMeta(spreadsheetId, token)
+
+  // 2. Read all tab headers (1 API call via batchGet)
+  const headerMap = await getAllHeaders(spreadsheetId, token)
+
   const requests: unknown[] = []
 
+  // --- Column deletions (must come first, before formatting references columns) ---
+  for (const { tab, column } of columnDeletions) {
+    const headers = headerMap.get(tab)
+    if (!headers) continue
+    const colIdx = headers.indexOf(column)
+    if (colIdx < 0) continue
+    const sheetId = sheetMap[tab]
+    if (sheetId == null) continue
+    requests.push({
+      deleteDimension: {
+        range: { sheetId, dimension: 'COLUMNS', startIndex: colIdx, endIndex: colIdx + 1 },
+      },
+    })
+    // Update cached headers to reflect deletion
+    headers.splice(colIdx, 1)
+  }
+
+  // --- Header formatting ---
   for (const tab of ALL_TABS) {
     const sheetId = sheetMap[tab]
     if (sheetId == null) continue
 
-    // Bold white text on dark blue background for header row
     requests.push({
       repeatCell: {
         range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
@@ -215,18 +334,21 @@ async function conformFormatting(
       },
     })
 
-    // Auto-fit column widths to content
     requests.push({
       autoResizeDimensions: {
         dimensions: { sheetId, dimension: 'COLUMNS' },
       },
     })
+  }
 
-    // Grey text for locked columns (rows 1+)
+  // --- Grey text for locked columns ---
+  for (const tab of ALL_TABS) {
+    const sheetId = sheetMap[tab]
+    if (sheetId == null) continue
     const lockedCols = LOCKED_COLUMNS[tab]
     if (!lockedCols) continue
+    const headers = headerMap.get(tab) || []
 
-    const { headers } = await getRows(spreadsheetId, tab, token)
     for (const col of lockedCols) {
       const colIdx = headers.indexOf(col)
       if (colIdx < 0) continue
@@ -244,45 +366,18 @@ async function conformFormatting(
     }
   }
 
-  if (requests.length > 0) {
-    await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
-      method: 'POST',
-      headers: authHeaders(token),
-      body: JSON.stringify({ requests }),
-    })
-  }
-}
-
-// --- Protections: clear old warningOnly ranges, add new ones ---
-
-async function conformProtections(
-  spreadsheetId: string,
-  token: string,
-  sheetMap: Record<string, number>,
-): Promise<void> {
-  // Read existing protected ranges
-  const res = await fetch(
-    `${SHEETS_BASE}/${spreadsheetId}?fields=sheets(properties,protectedRanges)`,
-    { headers: authHeaders(token) },
-  )
-  if (!res.ok) throw new Error('Failed to get sheet metadata for protections')
-  const data = await res.json()
-
-  const requests: unknown[] = []
-
-  // Delete all existing warningOnly protected ranges
-  for (const sheet of data.sheets || []) {
-    for (const pr of sheet.protectedRanges || []) {
-      if (pr.warningOnly) {
-        requests.push({ deleteProtectedRange: { protectedRangeId: pr.protectedRangeId } })
-      }
+  // --- Protections: delete old, add new ---
+  for (const pr of existingProtections) {
+    if (pr.warningOnly) {
+      requests.push({ deleteProtectedRange: { protectedRangeId: pr.protectedRangeId } })
     }
   }
 
-  // Add header row protection for every tab
   for (const tab of ALL_TABS) {
     const sheetId = sheetMap[tab]
     if (sheetId == null) continue
+
+    // Protect header row
     requests.push({
       addProtectedRange: {
         protectedRange: {
@@ -292,16 +387,12 @@ async function conformProtections(
         },
       },
     })
-  }
 
-  // Add column protections
-  for (const tab of ALL_TABS) {
-    const sheetId = sheetMap[tab]
-    if (sheetId == null) continue
+    // Protect locked columns
     const lockedCols = LOCKED_COLUMNS[tab]
     if (!lockedCols) continue
+    const headers = headerMap.get(tab) || []
 
-    const { headers } = await getRows(spreadsheetId, tab, token)
     for (const col of lockedCols) {
       const colIdx = headers.indexOf(col)
       if (colIdx < 0) continue
@@ -317,6 +408,23 @@ async function conformProtections(
     }
   }
 
+  // --- Data validation ---
+  for (const rule of VALIDATION_RULES) {
+    const sheetId = sheetMap[rule.tab]
+    if (sheetId == null) continue
+    const headers = headerMap.get(rule.tab) || []
+    const colIdx = headers.indexOf(rule.column)
+    if (colIdx < 0) continue
+
+    requests.push({
+      setDataValidation: {
+        range: { sheetId, startRowIndex: 1, startColumnIndex: colIdx, endColumnIndex: colIdx + 1 },
+        rule: { condition: buildValidationCondition(rule), strict: true, showCustomUi: true },
+      },
+    })
+  }
+
+  // 3. Send everything in one batchUpdate (1 API call)
   if (requests.length > 0) {
     await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
@@ -326,50 +434,7 @@ async function conformProtections(
   }
 }
 
-// --- Phone number sanitization ---
-
-async function conformPhoneNumbers(spreadsheetId: string, token: string): Promise<void> {
-  const { headers, rows } = await getRows(spreadsheetId, 'Contacts', token)
-  const phoneIdx = headers.indexOf('phone')
-  if (phoneIdx < 0) return
-
-  let dirty = false
-  const cleanedRows = rows.map((row) => {
-    const phone = row.phone || ''
-    const cleaned = phone.replace(/\D/g, '')
-    if (cleaned !== phone) dirty = true
-    return headers.map((h) => h === 'phone' ? cleaned : (row[h] || ''))
-  })
-
-  if (!dirty) return
-
-  // Rewrite all data rows (skip header)
-  const range = `Contacts!A2`
-  await fetch(
-    `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
-    {
-      method: 'PUT',
-      headers: authHeaders(token),
-      body: JSON.stringify({ values: cleanedRows }),
-    },
-  )
-}
-
-// --- Helpers ---
-
-async function getSheetMap(spreadsheetId: string, token: string): Promise<Record<string, number>> {
-  const res = await fetch(
-    `${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`,
-    { headers: authHeaders(token) },
-  )
-  if (!res.ok) throw new Error('Failed to get sheet metadata')
-  const data = await res.json()
-  const map: Record<string, number> = {}
-  for (const sheet of data.sheets || []) {
-    map[sheet.properties.title] = sheet.properties.sheetId
-  }
-  return map
-}
+// --- Format version helpers ---
 
 async function getFormatVersion(spreadsheetId: string, token: string): Promise<string> {
   const { rows } = await getRows(spreadsheetId, 'Settings', token)
@@ -390,22 +455,18 @@ async function setFormatVersion(spreadsheetId: string, token: string, version: s
 // --- Main entry point ---
 
 export async function conformSchema(spreadsheetId: string, token: string): Promise<void> {
-  // 1. Ensure all default settings exist
+  // 1. Ensure all default settings exist (1 read + N appends for missing)
   await conformSettings(spreadsheetId, token)
 
-  // 2. Column-add migrations
+  // 2. Column-add migrations (reads only affected tabs)
   await conformColumns(spreadsheetId, token)
 
-  // 3. Column deletions
-  await conformColumnDeletions(spreadsheetId, token)
-
-  // 4-6. Formatting, protections, phone sanitization (gated by version flag)
+  // 3. Formatting, protections, validation, column deletions (gated by version)
   const currentVersion = await getFormatVersion(spreadsheetId, token)
   if (currentVersion !== SHEET_FORMAT_VERSION) {
-    const sheetMap = await getSheetMap(spreadsheetId, token)
-    await conformFormatting(spreadsheetId, token, sheetMap)
-    await conformProtections(spreadsheetId, token, sheetMap)
-    await conformPhoneNumbers(spreadsheetId, token)
+    // 1 metadata call + 1 batchGet + 1 batchUpdate = 3 API calls
+    await conformSheetPresentation(spreadsheetId, token)
+    // Version update: 1 read + 1 write
     await setFormatVersion(spreadsheetId, token, SHEET_FORMAT_VERSION)
   }
 }

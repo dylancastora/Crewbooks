@@ -60,6 +60,9 @@ interface DataContextValue {
   reloadRates: () => Promise<void>
   reloadAll: () => Promise<void>
 
+  // Conforming
+  conforming: boolean
+
   // Rate limiting
   isRateLimited: boolean
   retryAfterTimestamp: number | null
@@ -96,6 +99,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [communicationsLoading, setCommunicationsLoading] = useState(true)
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [ratesLoading, setRatesLoading] = useState(true)
+
+  const [conforming, setConforming] = useState(false)
 
   // Rate limit state
   const [rateLimitState, setRateLimitState] = useState<RateLimitState>({
@@ -220,7 +225,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Initial load on mount — conform schema first, then load data
   useEffect(() => {
     if (spreadsheetId) {
-      getToken().then((token) => conformSchema(spreadsheetId, token)).then(() => reloadAll())
+      setConforming(true)
+      getToken()
+        .then((token) => conformSchema(spreadsheetId, token))
+        .then(() => { setConforming(false); return reloadAll() })
+        .catch(() => setConforming(false))
     }
   }, [spreadsheetId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -251,7 +260,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider
       value={{
         jobs, clients, contacts, expenses, allItems, communications, settings, labor, equipment,
-        loading, jobsLoading, clientsLoading, expensesLoading, itemsLoading, communicationsLoading, settingsLoading, ratesLoading,
+        loading, conforming, jobsLoading, clientsLoading, expensesLoading, itemsLoading, communicationsLoading, settingsLoading, ratesLoading,
         setJobs, setClients, setContacts, setExpenses, setAllItems, setCommunications, setSettings, setLabor, setEquipment,
         reloadJobs, reloadClients, reloadExpenses, reloadItems, reloadCommunications, reloadSettings, reloadRates, reloadAll,
         isRateLimited: rateLimitState.isRateLimited,

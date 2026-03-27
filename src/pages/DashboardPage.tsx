@@ -4,7 +4,7 @@ import { useClients } from '../hooks/useClients'
 import { useJobActions } from '../hooks/useJobActions'
 import { useDataContext } from '../context/DataProvider'
 import { Card } from '../components/ui/Card'
-import { Spinner } from '../components/ui/Spinner'
+import { LoadingScreen } from '../components/ui/LoadingScreen'
 import { JobCard } from '../components/jobs/JobCard'
 import { JobStatus } from '../types'
 
@@ -18,7 +18,7 @@ export function DashboardPage() {
   const { jobs, getPreferredAction, getMenuActions, totalsMap, allExpenses, getItemsForJob, getForJob } = useJobActions()
   const { loading } = useDataContext()
 
-  if (loading) return <Spinner className="py-12" />
+  if (loading) return <LoadingScreen />
 
   const currentYear = new Date().getFullYear()
   const today = new Date().toISOString().split('T')[0]

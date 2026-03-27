@@ -6,7 +6,7 @@ import { useDataContext } from '../context/DataProvider'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Select } from '../components/ui/Select'
-import { Spinner } from '../components/ui/Spinner'
+import { LoadingScreen } from '../components/ui/LoadingScreen'
 import { JobCard } from '../components/jobs/JobCard'
 import { JobStatus } from '../types'
 
@@ -84,7 +84,7 @@ export function JobsPage() {
 
   const getClientName = (clientId: string) => clients.find((c) => c.id === clientId)?.company || 'Unknown'
 
-  if (loading) return <Spinner className="py-12" />
+  if (loading) return <LoadingScreen />
 
   return (
     <div>

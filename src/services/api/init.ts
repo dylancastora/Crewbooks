@@ -172,6 +172,90 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
     }
   }
 
+  // Data validation rules
+  const UUID_RE = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  const DATE_RE = '^\\d{4}-\\d{2}-\\d{2}$'
+  const DATES_CSV_RE = '^\\d{4}-\\d{2}-\\d{2}(,\\s*\\d{4}-\\d{2}-\\d{2})*$'
+  const TIMESTAMP_RE = '^\\d{4}-\\d{2}-\\d{2}T'
+  const UUIDS_CSV_RE = '^[0-9a-f-]+(,[0-9a-f-]+)*$'
+
+  const selfRef = 'INDIRECT(ADDRESS(ROW(),COLUMN()))'
+  const uuidFormula = `=OR(REGEXMATCH(${selfRef},"${UUID_RE}"),${selfRef}="")`
+  const dateFormula = `=OR(REGEXMATCH(${selfRef},"${DATE_RE}"),${selfRef}="")`
+  const datesCsvFormula = `=OR(REGEXMATCH(${selfRef},"${DATES_CSV_RE}"),${selfRef}="")`
+  const timestampFormula = `=OR(REGEXMATCH(${selfRef},"${TIMESTAMP_RE}"),${selfRef}="")`
+  const uuidsCsvFormula = `=OR(REGEXMATCH(${selfRef},"${UUIDS_CSV_RE}"),${selfRef}="")`
+  const NUMBER_RE = '^-?\\d+\\.?\\d*$'
+  const numberFormula = `=OR(REGEXMATCH(TO_TEXT(${selfRef}),"${NUMBER_RE}"),${selfRef}="")`
+
+  type VRule = { tab: string; col: string; condition: unknown }
+  const mkEnum = (tab: string, col: string, values: string[]): VRule => {
+    const s = 'INDIRECT(ADDRESS(ROW(),COLUMN()))'
+    const options = values.map((v) => `${s}="${v}"`).join(',')
+    return { tab, col, condition: { type: 'CUSTOM_FORMULA', values: [{ userEnteredValue: `=OR(${options},${s}="")` }] } }
+  }
+  const mkFormula = (tab: string, col: string, formula: string): VRule => ({
+    tab, col, condition: { type: 'CUSTOM_FORMULA', values: [{ userEnteredValue: formula }] },
+  })
+
+  const validationRules: VRule[] = [
+    // Booleans (as text dropdowns, not checkboxes)
+    mkEnum('Jobs', 'cancelled', ['true', 'false']), mkEnum('JobItems', 'taxable', ['true', 'false']),
+    mkEnum('Expenses', 'billed', ['true', 'false']), mkEnum('Communications', 'isResend', ['true', 'false']),
+    mkEnum('Labor', 'taxable', ['true', 'false']), mkEnum('Labor', 'isActive', ['true', 'false']),
+    mkEnum('Equipment', 'taxable', ['true', 'false']), mkEnum('Equipment', 'isActive', ['true', 'false']),
+    // Enums
+    mkEnum('Jobs', 'status', ['draft', 'quoted', 'approved', 'invoiced', 'paid']),
+    mkEnum('JobItems', 'type', ['labor', 'equipment', 'mileage', 'custom']),
+    mkEnum('Expenses', 'category', ['Fuel', 'Meals', 'Equipment', 'Supplies', 'Rentals', 'Parking', 'Other']),
+    mkEnum('Communications', 'type', ['quote', 'invoice']),
+    mkEnum('Labor', 'unit', ['hour', 'day', 'week', 'flat']),
+    mkEnum('Equipment', 'unit', ['hour', 'day', 'week', 'flat']),
+    // Numbers
+    ...['taxRate', 'paymentWindow'].map((c) => mkFormula('Jobs', c, numberFormula)),
+    ...['days', 'quantity', 'rate', 'amount', 'sortOrder'].map((c) => mkFormula('JobItems', c, numberFormula)),
+    mkFormula('Expenses', 'amount', numberFormula),
+    mkFormula('Communications', 'amount', numberFormula),
+    mkFormula('Labor', 'rate', numberFormula),
+    mkFormula('Equipment', 'rate', numberFormula),
+    // UUIDs
+    ...['Clients', 'Contacts', 'Labor', 'Equipment', 'Jobs', 'JobItems', 'Expenses', 'Communications'].map(
+      (t) => mkFormula(t, 'id', uuidFormula),
+    ),
+    mkFormula('Jobs', 'clientId', uuidFormula),
+    mkFormula('Contacts', 'clientId', uuidFormula),
+    mkFormula('JobItems', 'jobId', uuidFormula),
+    mkFormula('Expenses', 'jobId', uuidFormula),
+    mkFormula('Expenses', 'clientId', uuidFormula),
+    mkFormula('Communications', 'jobId', uuidFormula),
+    mkFormula('Communications', 'priorCommunicationId', uuidFormula),
+    mkFormula('Jobs', 'contactIds', uuidsCsvFormula),
+    // Dates
+    mkFormula('Jobs', 'dueDate', dateFormula),
+    mkFormula('Expenses', 'date', dateFormula),
+    mkFormula('Communications', 'dateSent', timestampFormula),
+    mkFormula('Jobs', 'shootDates', datesCsvFormula),
+    // Timestamps
+    ...['Clients', 'Contacts', 'Labor', 'Equipment', 'Jobs', 'Expenses'].flatMap(
+      (t) => ['createdAt', 'updatedAt'].map((c) => mkFormula(t, c, timestampFormula)),
+    ),
+  ]
+
+  for (const rule of validationRules) {
+    const tabHeaders = TABS[rule.tab as keyof typeof TABS]
+    if (!tabHeaders) continue
+    const colIdx = tabHeaders.indexOf(rule.col)
+    if (colIdx < 0) continue
+    const sid = sheetMap[rule.tab]
+    if (sid == null) continue
+    formatRequests.push({
+      setDataValidation: {
+        range: { sheetId: sid, startRowIndex: 1, startColumnIndex: colIdx, endColumnIndex: colIdx + 1 },
+        rule: { condition: rule.condition, strict: true, showCustomUi: true },
+      },
+    })
+  }
+
   if (formatRequests.length > 0) {
     await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
@@ -186,7 +270,7 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
     {
       method: 'POST',
       headers,
-      body: JSON.stringify({ values: [['_sheetFormatVersion', '1']] }),
+      body: JSON.stringify({ values: [['_sheetFormatVersion', '4']] }),
     },
   )
 }

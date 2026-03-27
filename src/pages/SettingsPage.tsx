@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSettings } from '../hooks/useSettings'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
-import { Spinner } from '../components/ui/Spinner'
+import { LoadingScreen } from '../components/ui/LoadingScreen'
 import { useToast } from '../components/ui/Toast'
 
 const fields = [
@@ -44,7 +44,7 @@ export function SettingsPage() {
     setEditing(false)
   }
 
-  if (loading) return <Spinner className="py-12" />
+  if (loading) return <LoadingScreen />
 
   return (
     <div>

@@ -9,7 +9,7 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { Card } from '../components/ui/Card'
 import { Modal } from '../components/ui/Modal'
-import { Spinner } from '../components/ui/Spinner'
+import { LoadingScreen } from '../components/ui/LoadingScreen'
 import { EmptyState } from '../components/ui/EmptyState'
 import { DropdownMenu } from '../components/ui/DropdownMenu'
 import { ReceiptUploader } from '../components/expenses/ReceiptUploader'
@@ -131,7 +131,7 @@ export function ExpensesPage() {
     }
   }
 
-  if (loading) return <Spinner className="py-12" />
+  if (loading) return <LoadingScreen />
 
   return (
     <div>

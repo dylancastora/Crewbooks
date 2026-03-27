@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
 import { Modal } from '../components/ui/Modal'
-import { Spinner } from '../components/ui/Spinner'
+import { LoadingScreen } from '../components/ui/LoadingScreen'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Unit } from '../types'
 import type { LaborRate, EquipmentRate } from '../types'
@@ -61,7 +61,7 @@ export function RatesPage() {
     }
   }
 
-  if (loading) return <Spinner className="py-12" />
+  if (loading) return <LoadingScreen />
 
   return (
     <div>
