@@ -191,7 +191,8 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
   type VRule = { tab: string; col: string; condition: unknown }
   const mkEnum = (tab: string, col: string, values: string[]): VRule => {
     const s = 'INDIRECT(ADDRESS(ROW(),COLUMN()))'
-    const options = values.map((v) => `${s}="${v}"`).join(',')
+    const lower = `LOWER(${s})`
+    const options = values.map((v) => `${lower}="${v.toLowerCase()}"`).join(',')
     return { tab, col, condition: { type: 'CUSTOM_FORMULA', values: [{ userEnteredValue: `=OR(${options},${s}="")` }] } }
   }
   const mkFormula = (tab: string, col: string, formula: string): VRule => ({
@@ -270,7 +271,7 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
     {
       method: 'POST',
       headers,
-      body: JSON.stringify({ values: [['_sheetFormatVersion', '4']] }),
+      body: JSON.stringify({ values: [['_sheetFormatVersion', '5']] }),
     },
   )
 }

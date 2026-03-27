@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS } from './init'
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 
 // Bump when formatting/protection/validation config changes
-const SHEET_FORMAT_VERSION = '4'
+const SHEET_FORMAT_VERSION = '5'
 
 interface MigrationContext {
   communications: Record<string, string>[]
@@ -89,7 +89,8 @@ type ValidationRule =
 
 function enumFormula(values: string[]): string {
   const s = 'INDIRECT(ADDRESS(ROW(),COLUMN()))'
-  const options = values.map((v) => `${s}="${v}"`).join(',')
+  const lower = `LOWER(${s})`
+  const options = values.map((v) => `${lower}="${v.toLowerCase()}"`).join(',')
   return `=OR(${options},${s}="")`
 }
 
