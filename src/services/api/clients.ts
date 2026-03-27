@@ -92,6 +92,7 @@ export async function createContact(
 ): Promise<Contact> {
   const contact: Contact = {
     ...data,
+    phone: (data.phone || '').replace(/\D/g, ''),
     id: generateId(),
     createdAt: now(),
     updatedAt: now(),
@@ -107,6 +108,7 @@ export async function updateContact(
   contact: Contact,
   token: string,
 ): Promise<void> {
+  contact.phone = (contact.phone || '').replace(/\D/g, '')
   contact.updatedAt = now()
   const obj = contact as unknown as Record<string, unknown>
   const row = CONTACT_HEADERS.map((h) => String(obj[h] ?? ''))

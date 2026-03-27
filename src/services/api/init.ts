@@ -26,16 +26,17 @@ export const DEFAULT_SETTINGS = [
   ['businessEmail', ''],
 ]
 
-// System columns (id columns) to protect with warningOnly
-const PROTECTED_COLUMNS: Record<string, number[]> = {
-  Clients: [0],
-  Contacts: [0],
-  Labor: [0],
-  Equipment: [0],
-  Jobs: [0],
-  JobItems: [0],
-  Expenses: [0],
-  Communications: [0],
+// Locked columns by index — protected with warningOnly + grey text
+const LOCKED_COLUMNS: Record<string, number[]> = {
+  Clients: [0, 7, 8],                                      // id, createdAt, updatedAt
+  Contacts: [0, 1, 6, 7],                                  // id, clientId, createdAt, updatedAt
+  Labor: [0, 6, 7],                                        // id, createdAt, updatedAt
+  Equipment: [0, 3, 6, 7],                                 // id, unit, createdAt, updatedAt
+  Jobs: [0, 1, 2, 3, 4, 5, 6, 12, 13, 14],                // id, jobNumber, clientId, title, status, contactIds, shootDates, cancelled, createdAt, updatedAt
+  JobItems: [0, 1, 2, 3, 9, 10],                           // id, jobId, jobNumber, type, sortOrder, amount
+  Expenses: [0, 1, 2, 7, 8, 10, 11],                       // id, jobId, clientId, receiptFileId, receiptFileName, createdAt, updatedAt
+  Communications: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],         // ALL columns
+  Settings: [0],                                             // key
 }
 
 async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<void> {
@@ -105,31 +106,82 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
     },
   )
 
-  // Add protected ranges (warningOnly) for system columns
-  const protectRequests = Object.entries(PROTECTED_COLUMNS).map(([tab, cols]) => {
-    return cols.map((col) => ({
+  // Format headers + locked columns, and add protections
+  const formatRequests: unknown[] = []
+
+  for (const tab of tabNames) {
+    const sheetId = sheetMap[tab]
+
+    // Bold white text on dark blue background for header row
+    formatRequests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: { red: 0.12, green: 0.24, blue: 0.43 },
+            textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
+          },
+        },
+        fields: 'userEnteredFormat(backgroundColor,textFormat)',
+      },
+    })
+
+    // Protect header row
+    formatRequests.push({
       addProtectedRange: {
         protectedRange: {
-          range: {
-            sheetId: sheetMap[tab],
-            startRowIndex: 1, // skip header
-            startColumnIndex: col,
-            endColumnIndex: col + 1,
-          },
-          description: `System column: ${TABS[tab as keyof typeof TABS][col]}`,
+          range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+          description: `Header row: ${tab}`,
           warningOnly: true,
         },
       },
-    }))
-  }).flat()
+    })
 
-  if (protectRequests.length > 0) {
+    // Grey text + protection for locked columns
+    const lockedCols = LOCKED_COLUMNS[tab]
+    if (lockedCols) {
+      for (const col of lockedCols) {
+        formatRequests.push({
+          repeatCell: {
+            range: { sheetId, startRowIndex: 1, startColumnIndex: col, endColumnIndex: col + 1 },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { foregroundColor: { red: 0.6, green: 0.6, blue: 0.6 } },
+              },
+            },
+            fields: 'userEnteredFormat(textFormat.foregroundColor)',
+          },
+        })
+        formatRequests.push({
+          addProtectedRange: {
+            protectedRange: {
+              range: { sheetId, startRowIndex: 1, startColumnIndex: col, endColumnIndex: col + 1 },
+              description: `Locked column: ${tab}.${TABS[tab][col]}`,
+              warningOnly: true,
+            },
+          },
+        })
+      }
+    }
+  }
+
+  if (formatRequests.length > 0) {
     await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ requests: protectRequests }),
+      body: JSON.stringify({ requests: formatRequests }),
     })
   }
+
+  // Write format version so conform skips formatting on first login
+  await fetch(
+    `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent('Settings!A2')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ values: [['_sheetFormatVersion', '1']] }),
+    },
+  )
 }
 
 async function deleteDefaultSheet(spreadsheetId: string, token: string): Promise<void> {
