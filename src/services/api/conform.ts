@@ -215,6 +215,13 @@ async function conformFormatting(
       },
     })
 
+    // Auto-fit column widths to content
+    requests.push({
+      autoResizeDimensions: {
+        dimensions: { sheetId, dimension: 'COLUMNS' },
+      },
+    })
+
     // Grey text for locked columns (rows 1+)
     const lockedCols = LOCKED_COLUMNS[tab]
     if (!lockedCols) continue

@@ -126,6 +126,13 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
       },
     })
 
+    // Auto-fit column widths to content
+    formatRequests.push({
+      autoResizeDimensions: {
+        dimensions: { sheetId, dimension: 'COLUMNS' },
+      },
+    })
+
     // Protect header row
     formatRequests.push({
       addProtectedRange: {
