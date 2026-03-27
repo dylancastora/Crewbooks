@@ -5,6 +5,7 @@ const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 
 interface MigrationContext {
   communications: Record<string, string>[]
+  jobs: Record<string, string>[]
 }
 
 interface SchemaMigration {
@@ -37,6 +38,17 @@ const migrations: SchemaMigration[] = [
       const window = parseInt(row.paymentWindow) || 30
       sent.setDate(sent.getDate() + window)
       return sent.toISOString().split('T')[0]
+    },
+  },
+  {
+    tab: 'JobItems',
+    column: 'days',
+    afterColumn: 'description',
+    defaultValue: (row, ctx) => {
+      if (row.type === 'mileage') return '0'
+      const job = ctx.jobs.find((j) => j.id === row.jobId)
+      if (!job || !job.shootDates) return '1'
+      return String(job.shootDates.split(',').map((d) => d.trim()).filter(Boolean).length || 1)
     },
   },
 ]
@@ -79,13 +91,16 @@ export async function conformSchema(spreadsheetId: string, token: string): Promi
   if (tabMissing.size === 0) return
 
   // Check if any migration needs cross-tab context
-  let context: MigrationContext = { communications: [] }
-  const needsComms = Array.from(tabMissing.values()).flat().some(
+  let context: MigrationContext = { communications: [], jobs: [] }
+  const needsContext = Array.from(tabMissing.values()).flat().some(
     (m) => typeof m.defaultValue === 'function',
   )
-  if (needsComms) {
-    const commData = await getRows(spreadsheetId, 'Communications', token)
-    context = { communications: commData.rows }
+  if (needsContext) {
+    const [commData, jobsData] = await Promise.all([
+      getRows(spreadsheetId, 'Communications', token),
+      getRows(spreadsheetId, 'Jobs', token),
+    ])
+    context = { communications: commData.rows, jobs: jobsData.rows }
   }
 
   const headers: Record<string, string> = {

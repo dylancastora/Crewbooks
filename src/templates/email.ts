@@ -5,13 +5,7 @@ function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`
 }
 
-function computeShootDays(shootDates: string): number {
-  if (!shootDates) return 1
-  return shootDates.split(',').map((d) => d.trim()).filter(Boolean).length || 1
-}
-
 function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], totals: JobTotals): string {
-  const shootDays = computeShootDays(job.shootDates)
   const dailyItems = items.filter((i) => i.type === 'labor' || i.type === 'equipment')
   const mileageItems = items.filter((i) => i.type === 'mileage')
 
@@ -25,6 +19,7 @@ function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], tot
         <thead>
           <tr style="background: #f3f4f6;">
             <th style="padding: 8px; text-align: left;">Description</th>
+            <th style="padding: 8px; text-align: center;">Days</th>
             <th style="padding: 8px; text-align: center;">Qty</th>
             <th style="padding: 8px; text-align: right;">Rate</th>
             <th style="padding: 8px; text-align: right;">Amount</th>
@@ -34,20 +29,13 @@ function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], tot
           ${dailyItems.map((item) => `
             <tr>
               <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(item.description)}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${escapeHtml(String(item.days))}</td>
               <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${escapeHtml(String(item.quantity))}</td>
               <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.rate)}</td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.quantity * item.rate)}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.amount)}</td>
             </tr>
           `).join('')}
         </tbody>
-      </table>
-    `
-
-    const dailySubtotal = dailyItems.reduce((sum, i) => sum + i.quantity * i.rate, 0)
-    html += `
-      <table style="width: 250px; margin-left: auto;">
-        <tr><td style="padding: 4px;">Daily Subtotal</td><td style="text-align: right; padding: 4px;">${formatCurrency(dailySubtotal)}</td></tr>
-        ${shootDays > 1 ? `<tr><td style="padding: 4px; color: #666;">&times; ${escapeHtml(String(shootDays))} days</td><td style="text-align: right; padding: 4px; color: #666;">${formatCurrency(dailySubtotal * shootDays)}</td></tr>` : ''}
       </table>
     `
   }

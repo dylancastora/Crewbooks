@@ -51,7 +51,16 @@ export function LoginPage() {
             </Button>
         )}
         </div>
-      <div className="mt-8 rounded-2xl shadow-lg p-8 w-full max-w-sm text-center" style={{ background: 'linear-gradient(135deg, #2563EB, #1e40af)' }}>
+      <div className="mt-8 bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
+        <h2 className="font-semibold text-gray-800 mb-3">How Crewbooks Works</h2>
+        <p className="text-gray-500">Crewbooks creates a spreadsheet in your Google Drive to use as its database, stores receipt photos in your Drive, and sends quotes and invoices from your Gmail. No data ever touches a third-party server — everything stays in your Google account.</p>
+        <p className="text-gray-500 mt-4">
+          <Link to="/terms-of-service" className="underline">Terms of Service</Link>
+          {' · '}
+          <Link to="/privacy-policy" className="underline">Privacy Policy</Link>
+        </p>
+      </div>
+      <div className="mt-8 mb-8 rounded-2xl shadow-lg p-8 w-full max-w-sm text-center" style={{ background: 'linear-gradient(135deg, #2563EB, #1e40af)' }}>
         <p className="text-blue-100">Created by&nbsp;
           <a
             href="https://www.imdb.com/name/nm13328053/"
@@ -71,15 +80,6 @@ export function LoginPage() {
           className="mt-4 inline-block w-full px-6 py-3 bg-white text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors"
           target="_blank" rel="noopener noreferrer"
         >Support Crewbooks</a>
-      </div>
-      <div className="mt-8 mb-8 bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
-        <h2 className="font-semibold text-gray-800 mb-3">How Crewbooks Works</h2>
-        <p className="text-gray-500">Crewbooks creates a spreadsheet in your Google Drive to use as its database, stores receipt photos in your Drive, and sends quotes and invoices from your Gmail. No data ever touches a third-party server — everything stays in your Google account.</p>
-        <p className="text-gray-500 mt-4">
-          <Link to="/terms-of-service" className="underline">Terms of Service</Link>
-          {' · '}
-          <Link to="/privacy-policy" className="underline">Privacy Policy</Link>
-        </p>
       </div>
       </div>
     </div>

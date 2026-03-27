@@ -5,11 +5,12 @@ function generateId(): string {
   return crypto.randomUUID()
 }
 
-const ITEM_HEADERS = ['id', 'jobId', 'jobNumber', 'type', 'description', 'date', 'quantity', 'rate', 'taxable', 'sortOrder', 'amount']
+const ITEM_HEADERS = ['id', 'jobId', 'jobNumber', 'type', 'description', 'days', 'quantity', 'rate', 'taxable', 'sortOrder', 'amount']
 
 function rowToItem(row: Record<string, string>): JobItem {
   return {
     ...row,
+    days: parseFloat(row.days) || 0,
     quantity: parseFloat(row.quantity) || 0,
     rate: parseFloat(row.rate) || 0,
     taxable: row.taxable === 'true',

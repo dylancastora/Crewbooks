@@ -94,15 +94,15 @@ export function JobsPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <Card className="!p-3">
+        <Card className="!p-3" onClick={() => setFilter(JobStatus.Paid)}>
           <p className="text-xs text-gray-500">Earnings YTD</p>
           <p className="text-lg font-bold text-green-600">${earnings.toFixed(2)}</p>
         </Card>
-        <Card className="!p-3">
+        <Card className="!p-3" onClick={() => setFilter(JobStatus.Invoiced)}>
           <p className="text-xs text-gray-500">Receivables</p>
           <p className="text-lg font-bold">${receivables.toFixed(2)}</p>
         </Card>
-        <Card className="!p-3">
+        <Card className="!p-3" onClick={() => setFilter('Upcoming')}>
           <p className="text-xs text-gray-500">Pipeline</p>
           <p className="text-lg font-bold text-primary">${pipeline.toFixed(2)}</p>
         </Card>

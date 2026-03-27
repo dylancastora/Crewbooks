@@ -143,7 +143,7 @@ export function ClientsPage() {
                 <div className="flex items-center justify-between" onClick={() => setExpandedClient(isExpanded ? null : client.id)}>
                   <div className="cursor-pointer flex-1">
                     <h3 className="font-semibold">{client.company}</h3>
-                    <p className="text-sm text-gray-500">{[client.city, client.state].filter(Boolean).join(', ')}</p>
+                    {clientContacts[0]?.name && <p className="text-sm text-gray-500">{clientContacts[0].name}</p>}
                   </div>
                   <span className="text-gray-400">{isExpanded ? '▲' : '▼'}</span>
                 </div>

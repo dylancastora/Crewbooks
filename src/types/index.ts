@@ -103,7 +103,7 @@ export interface JobItem {
   jobNumber: string
   type: ItemType
   description: string
-  date: string
+  days: number
   quantity: number
   rate: number
   taxable: boolean

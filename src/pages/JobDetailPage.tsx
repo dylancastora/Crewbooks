@@ -157,8 +157,8 @@ export function JobDetailPage() {
     getToken().then((token) =>
       getJobItems(spreadsheetId, existingJob.id, token),
     ).then((jobItems) => {
-      setItems(jobItems.map(({ type, description, date, quantity, rate, taxable }) => ({
-        type, description, date, quantity, rate, taxable,
+      setItems(jobItems.map(({ type, description, days, quantity, rate, taxable }) => ({
+        type, description, days, quantity, rate, taxable,
       })))
     }).finally(() => {
       setLoadingItems(false)
@@ -234,6 +234,13 @@ export function JobDetailPage() {
 
     const token = await getToken()
 
+    // Validate days don't exceed shoot days
+    const overDaysItem = items.find((item) => item.type !== 'mileage' && item.days > shootDays)
+    if (overDaysItem) {
+      showToast(`"${overDaysItem.description || 'Untitled'}" has more days than shoot days selected. Consider increasing quantity instead.`)
+      return
+    }
+
     // Build full items with days multiplied in for storage
     const fullItems: JobItem[] = items.map((item, idx) => ({
       ...item,
@@ -243,7 +250,7 @@ export function JobDetailPage() {
       sortOrder: idx,
       amount: item.type === 'mileage'
         ? item.quantity * item.rate
-        : shootDays * item.quantity * item.rate,
+        : item.days * item.quantity * item.rate,
     }))
 
     let savedJob: Job | undefined
@@ -339,7 +346,7 @@ export function JobDetailPage() {
         <div>
           <h2 className="text-lg font-semibold mb-1">Line Items</h2>
           {shootDays > 0 && (
-            <p className="text-sm text-gray-500 mb-3">{shootDays} shoot day{shootDays !== 1 ? 's' : ''} selected — line items multiply by days</p>
+            <p className="text-sm text-gray-500 mb-3">{shootDays} shoot day{shootDays !== 1 ? 's' : ''} selected</p>
           )}
           <LineItemEditor
             items={items}
@@ -358,7 +365,7 @@ export function JobDetailPage() {
           />
         </div>
 
-        <JobSummary items={items} taxRate={formData.taxRate} shootDays={shootDays || 1} expensesSubtotal={expensesSubtotal} />
+        <JobSummary items={items} taxRate={formData.taxRate} expensesSubtotal={expensesSubtotal} />
 
         <button
           onClick={handleSave}

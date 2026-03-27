@@ -5,11 +5,6 @@ function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`
 }
 
-function computeShootDays(shootDates: string): number {
-  if (!shootDates) return 1
-  return shootDates.split(',').map((d) => d.trim()).filter(Boolean).length || 1
-}
-
 export function generateJobPDF(
   job: Job,
   items: JobItem[],
@@ -72,8 +67,6 @@ export function generateJobPDF(
   }
   y += 5
 
-  const shootDays = computeShootDays(job.shootDates)
-
   // --- Daily Rates section (Labor + Equipment) ---
   const dailyItems = items.filter((i) => i.type === 'labor' || i.type === 'equipment')
   if (dailyItems.length > 0) {
@@ -88,7 +81,8 @@ export function generateJobPDF(
     doc.setFontSize(8)
     doc.setTextColor(80, 80, 80)
     doc.text('Description', 16, y + 2)
-    doc.text('Qty', 115, y + 2)
+    doc.text('Days', 100, y + 2)
+    doc.text('Qty', 118, y + 2)
     doc.text('Rate', 140, y + 2)
     doc.text('Amount', 170, y + 2)
     y += 10
@@ -97,29 +91,11 @@ export function generateJobPDF(
     doc.setTextColor(0, 0, 0)
     for (const item of dailyItems) {
       if (y > 270) { doc.addPage(); y = 20 }
-      const amount = item.quantity * item.rate
-      doc.text(item.description.substring(0, 50), 16, y)
-      doc.text(String(item.quantity), 115, y)
+      doc.text(item.description.substring(0, 45), 16, y)
+      doc.text(String(item.days), 100, y)
+      doc.text(String(item.quantity), 118, y)
       doc.text(formatCurrency(item.rate), 140, y)
-      doc.text(formatCurrency(amount), 170, y)
-      y += 5
-    }
-
-    // Daily subtotal
-    const dailySubtotal = dailyItems.reduce((sum, i) => sum + i.quantity * i.rate, 0)
-    y += 2
-    doc.setFontSize(9)
-    doc.setTextColor(80, 80, 80)
-    doc.text('Daily Subtotal:', 130, y)
-    doc.setTextColor(0, 0, 0)
-    doc.text(formatCurrency(dailySubtotal), 170, y)
-    y += 5
-
-    if (shootDays > 1) {
-      doc.setTextColor(80, 80, 80)
-      doc.text(`\u00D7 ${shootDays} days:`, 130, y)
-      doc.setTextColor(0, 0, 0)
-      doc.text(formatCurrency(dailySubtotal * shootDays), 170, y)
+      doc.text(formatCurrency(item.amount), 170, y)
       y += 5
     }
     y += 5

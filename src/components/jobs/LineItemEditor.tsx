@@ -45,7 +45,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
       const newItem: PartialItem = {
         type: ItemType.Mileage,
         description: `Mileage (0 mi @ $${mileageRate}/mi)`,
-        date: '',
+        days: 0,
         quantity: 0,
         rate: mileageRate,
         taxable: false,
@@ -58,7 +58,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
     const newItem: PartialItem = {
       type: type as ItemType,
       description: rate.name,
-      date: '',
+      days: shootDays,
       quantity: 1,
       rate: rate.rate,
       taxable: rate.taxable,
@@ -75,7 +75,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
     const newItem: PartialItem = {
       type: activeTab as ItemType,
       description: newRateForm.name,
-      date: '',
+      days: shootDays,
       quantity: 1,
       rate: newRateForm.rate,
       taxable: newRateForm.taxable,
@@ -116,7 +116,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
 
   const calcLineTotal = (item: PartialItem) => {
     if (item.type === ItemType.Mileage) return item.quantity * item.rate
-    return shootDays * item.quantity * item.rate
+    return item.days * item.quantity * item.rate
   }
 
   // Tab counts
@@ -255,7 +255,17 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                   <span className="text-sm font-medium text-gray-700">{item.description || 'Untitled'}</span>
                   {!readOnly && <Button size="sm" variant="danger" onClick={() => removeItem(idx)}>Remove</Button>}
                 </div>
-                <div className="grid grid-cols-3 gap-2 mb-2">
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  <Input
+                    label="Days"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={item.days || ''}
+                    onChange={(e) => updateItem(idx, { days: parseFloat(e.target.value) || 0 })}
+                    autoComplete="off"
+                    disabled={readOnly}
+                  />
                   <Input
                     label="Qty"
                     type="number"
@@ -275,14 +285,9 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     disabled={readOnly}
                   />
                   <div className="flex items-end pb-1">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-0.5">
-                        {shootDays > 0 ? `${shootDays}d × ${item.quantity} × $${item.rate}` : ''}
-                      </p>
-                      <span className="text-sm font-medium text-gray-700">
-                        = ${calcLineTotal(item).toFixed(2)}
-                      </span>
-                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      = ${calcLineTotal(item).toFixed(2)}
+                    </span>
                   </div>
                 </div>
                 <label className="flex items-center gap-2">
