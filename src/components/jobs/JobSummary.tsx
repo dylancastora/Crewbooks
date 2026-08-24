@@ -1,4 +1,5 @@
 import { Card } from '../ui/Card'
+import { lineItemAmount } from '../../utils/lineItems'
 import type { JobItem } from '../../types'
 
 interface JobSummaryProps {
@@ -15,9 +16,7 @@ export function JobSummary({ items, taxRate, expensesSubtotal = 0 }: JobSummaryP
   let taxableSubtotal = 0
 
   for (const item of items) {
-    const fullAmount = item.type === 'mileage'
-      ? item.quantity * item.rate
-      : item.days * item.quantity * item.rate
+    const fullAmount = lineItemAmount(item)
     switch (item.type) {
       case 'labor': laborTotal += fullAmount; break
       case 'equipment': equipmentTotal += fullAmount; break

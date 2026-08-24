@@ -1,4 +1,6 @@
-import { getRows, appendRow, getSheetId } from '../google/sheets'
+import { getRows, replaceRowsMatching } from '../google/sheets'
+import { mileageDescription, lineItemAmount } from '../../utils/lineItems'
+import { ItemType } from '../../types'
 import type { JobItem } from '../../types'
 
 function generateId(): string {
@@ -8,14 +10,24 @@ function generateId(): string {
 const ITEM_HEADERS = ['id', 'jobId', 'jobNumber', 'type', 'description', 'days', 'quantity', 'rate', 'taxable', 'sortOrder', 'amount']
 
 function rowToItem(row: Record<string, string>): JobItem {
+  const days = parseFloat(row.days) || 0
+  const quantity = parseFloat(row.quantity) || 0
+  const rate = parseFloat(row.rate) || 0
+  const type = row.type
+
   return {
     ...row,
-    days: parseFloat(row.days) || 0,
-    quantity: parseFloat(row.quantity) || 0,
-    rate: parseFloat(row.rate) || 0,
+    days,
+    quantity,
+    rate,
     taxable: row.taxable === 'true',
     sortOrder: parseInt(row.sortOrder) || 0,
-    amount: parseFloat(row.amount) || 0,
+    // days/quantity/rate are the hand-editable columns; amount and the mileage
+    // label are app-managed restatements of them. Recomputing on read is what
+    // lets a rate corrected in the spreadsheet reach the totals and the
+    // invoice, instead of leaving a row that contradicts itself.
+    amount: lineItemAmount({ type, days, quantity, rate }),
+    ...(type === ItemType.Mileage ? { description: mileageDescription(quantity, rate) } : {}),
   } as unknown as JobItem
 }
 
@@ -36,35 +48,6 @@ export async function setJobItems(
   items: Omit<JobItem, 'id'>[],
   token: string,
 ): Promise<JobItem[]> {
-  // Delete all existing items for this job
-  const { rows } = await getRows(spreadsheetId, 'JobItems', token)
-  const existingIndices = rows
-    .map((r, i) => r.jobId === jobId ? i : -1)
-    .filter((i) => i >= 0)
-    .reverse() // delete from bottom to preserve indices
-
-  const sheetId = await getSheetId(spreadsheetId, 'JobItems', token)
-  const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
-
-  if (existingIndices.length > 0) {
-    const deleteRequests = existingIndices.map((i) => ({
-      deleteDimension: {
-        range: {
-          sheetId,
-          dimension: 'ROWS',
-          startIndex: i + 1, // +1 for header
-          endIndex: i + 2,
-        },
-      },
-    }))
-    await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests: deleteRequests }),
-    })
-  }
-
-  // Write new items
   const newItems: JobItem[] = items.map((item, idx) => ({
     ...item,
     id: generateId(),
@@ -74,11 +57,14 @@ export async function setJobItems(
     amount: item.amount,
   } as JobItem))
 
-  for (const item of newItems) {
+  const rows = newItems.map((item) => {
     const obj = item as unknown as Record<string, unknown>
-    const row = ITEM_HEADERS.map((h) => String(obj[h] ?? ''))
-    await appendRow(spreadsheetId, 'JobItems', row, token)
-  }
+    return ITEM_HEADERS.map((h) => String(obj[h] ?? ''))
+  })
+
+  // Swap this job's rows out for the new set as a single serialized operation —
+  // splitting the delete from the append lets a concurrent save duplicate items.
+  await replaceRowsMatching(spreadsheetId, 'JobItems', 'jobId', jobId, rows, token)
 
   return newItems
 }

@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useDataContext } from '../context/DataProvider'
-import { createExpense as createExpenseApi, updateExpense as updateExpenseApi, deleteExpense as deleteExpenseApi } from '../services/api/expenses'
+import { createExpense as createExpenseApi, updateExpense as updateExpenseApi, updateExpenses as updateExpensesApi, deleteExpense as deleteExpenseApi } from '../services/api/expenses'
 import type { Expense } from '../types'
 
 export function useExpenses() {
@@ -25,6 +25,16 @@ export function useExpenses() {
     setExpenses((prev) => prev.map((e) => e.id === expense.id ? expense : e))
   }, [spreadsheetId, getToken, isRateLimited, setExpenses])
 
+  const updateExpenses = useCallback(async (updated: Expense[]) => {
+    if (!spreadsheetId) return
+    if (updated.length === 0) return
+    if (isRateLimited) throw new Error('Rate limited — please wait')
+    const token = await getToken()
+    const saved = await updateExpensesApi(spreadsheetId, updated, token)
+    const byId = new Map(saved.map((e) => [e.id, e]))
+    setExpenses((prev) => prev.map((e) => byId.get(e.id) ?? e))
+  }, [spreadsheetId, getToken, isRateLimited, setExpenses])
+
   const deleteExpense = useCallback(async (expenseId: string) => {
     if (!spreadsheetId) return
     if (isRateLimited) throw new Error('Rate limited — please wait')
@@ -33,5 +43,5 @@ export function useExpenses() {
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId))
   }, [spreadsheetId, getToken, isRateLimited, setExpenses])
 
-  return { expenses, loading, createExpense, updateExpense, deleteExpense, reload: reloadExpenses }
+  return { expenses, loading, createExpense, updateExpense, updateExpenses, deleteExpense, reload: reloadExpenses }
 }

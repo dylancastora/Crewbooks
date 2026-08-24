@@ -1,4 +1,5 @@
 import { ensureFolder, findFile, createSpreadsheet } from '../google/drive'
+import { apiFetch } from '../google/http'
 import type { Workspace } from '../../types'
 
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
@@ -43,7 +44,7 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
   // Get existing sheets to find Sheet1's sheetId for deletion
-  const metaRes = await fetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, { headers })
+  const metaRes = await apiFetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, { headers })
   const meta = await metaRes.json()
   const defaultSheetId = meta.sheets?.[0]?.properties?.sheetId ?? 0
 
@@ -64,14 +65,14 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
   // Delete default Sheet1
   requests.push({ deleteSheet: { sheetId: defaultSheetId } })
 
-  await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
+  await apiFetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ requests }),
   })
 
   // Get new sheet IDs for header writes and protected ranges
-  const newMetaRes = await fetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, { headers })
+  const newMetaRes = await apiFetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, { headers })
   const newMeta = await newMetaRes.json()
   const sheetMap: Record<string, number> = {}
   for (const sheet of newMeta.sheets) {
@@ -84,7 +85,7 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
     values: [TABS[tab]],
   }))
 
-  await fetch(
+  await apiFetch(
     `${SHEETS_BASE}/${spreadsheetId}/values:batchUpdate`,
     {
       method: 'POST',
@@ -97,7 +98,7 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
   )
 
   // Write default settings rows
-  await fetch(
+  await apiFetch(
     `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent('Settings!A2')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
@@ -258,7 +259,7 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
   }
 
   if (formatRequests.length > 0) {
-    await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
+    await apiFetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ requests: formatRequests }),
@@ -266,7 +267,7 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
   }
 
   // Write format version so conform skips formatting on first login
-  await fetch(
+  await apiFetch(
     `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent('Settings!A2')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
@@ -279,11 +280,11 @@ async function setupSpreadsheet(spreadsheetId: string, token: string): Promise<v
 async function deleteDefaultSheet(spreadsheetId: string, token: string): Promise<void> {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
   try {
-    const res = await fetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, { headers })
+    const res = await apiFetch(`${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`, { headers })
     const data = await res.json()
     const sheet1 = data.sheets?.find((s: { properties: { title: string } }) => s.properties.title === 'Sheet1')
     if (sheet1) {
-      await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
+      await apiFetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

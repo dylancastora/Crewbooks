@@ -1,4 +1,5 @@
-import { getRows, appendRow, updateRowById, getSheetId } from '../google/sheets'
+import { getRows, appendRow, updateRowById, deleteRowById, deleteRowsMatching } from '../google/sheets'
+import { unlinkExpensesFromJob } from './expenses'
 import { JobStatus } from '../../types'
 import type { Job, JobItem, Expense, JobTotals, Settings } from '../../types'
 
@@ -82,43 +83,13 @@ export async function deleteJob(
   jobId: string,
   token: string,
 ): Promise<void> {
-  const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-
-  // Gather all row indices to delete across tabs
-  const tabs = ['Jobs', 'JobItems', 'Expenses', 'Communications'] as const
-  const deleteBatch: Array<{ tab: string; indices: number[] }> = []
-
-  for (const tab of tabs) {
-    const { rows } = await getRows(spreadsheetId, tab, token)
-    const field = tab === 'Jobs' ? 'id' : 'jobId'
-    const indices = rows
-      .map((r, i) => r[field] === jobId ? i : -1)
-      .filter((i) => i >= 0)
-      .reverse()
-    if (indices.length > 0) {
-      deleteBatch.push({ tab, indices })
-    }
+  // Line items and communications only exist to describe this job.
+  for (const tab of ['JobItems', 'Communications']) {
+    await deleteRowsMatching(spreadsheetId, tab, 'jobId', jobId, token)
   }
-
-  for (const { tab, indices } of deleteBatch) {
-    const sheetId = await getSheetId(spreadsheetId, tab, token)
-    const requests = indices.map((i) => ({
-      deleteDimension: {
-        range: {
-          sheetId,
-          dimension: 'ROWS',
-          startIndex: i + 1,
-          endIndex: i + 2,
-        },
-      },
-    }))
-    await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ requests }),
-    })
-  }
+  // Expenses are the client's, not the job's — they outlive it.
+  await unlinkExpensesFromJob(spreadsheetId, jobId, token)
+  await deleteRowById(spreadsheetId, 'Jobs', jobId, token)
 }
 
 export function calculateTotals(items: JobItem[], expenses: Expense[], taxRate: number): JobTotals {

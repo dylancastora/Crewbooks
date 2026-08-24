@@ -3,6 +3,7 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Modal } from '../ui/Modal'
 import { formatDate } from '../../utils/formatDate'
+import { mileageDescription, lineItemAmount } from '../../utils/lineItems'
 import { ItemType } from '../../types'
 import type { JobItem, LaborRate, EquipmentRate, Settings, Expense } from '../../types'
 
@@ -15,7 +16,6 @@ interface LineItemEditorProps {
   equipmentRates: EquipmentRate[]
   settings: Settings
   shootDays: number
-  readOnly?: boolean
   onCreateRate?: (type: 'Labor' | 'Equipment', data: { name: string; rate: number; taxable: boolean }) => Promise<void>
   clientId?: string
   linkedExpenses?: Expense[]
@@ -31,7 +31,7 @@ const typeOptions = [
   { value: 'expense', label: 'Expenses' },
 ]
 
-export function LineItemEditor({ items, onChange, laborRates, equipmentRates, settings, shootDays, readOnly, onCreateRate, clientId, linkedExpenses = [], availableExpenses = [], onLinkExpense, onUnlinkExpense }: LineItemEditorProps) {
+export function LineItemEditor({ items, onChange, laborRates, equipmentRates, settings, shootDays, onCreateRate, clientId, linkedExpenses = [], availableExpenses = [], onLinkExpense, onUnlinkExpense }: LineItemEditorProps) {
   const [activeTab, setActiveTab] = useState<string>(ItemType.Labor)
   const [showNewRateModal, setShowNewRateModal] = useState(false)
   const [newRateForm, setNewRateForm] = useState({ name: '', rate: 0, taxable: false, saveToRates: false })
@@ -41,10 +41,10 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
   // Auto-create mileage item when switching to mileage tab if none exists
   const mileageItems = items.filter((i) => i.type === ItemType.Mileage)
   useEffect(() => {
-    if (activeTab === ItemType.Mileage && mileageItems.length === 0 && !readOnly) {
+    if (activeTab === ItemType.Mileage && mileageItems.length === 0) {
       const newItem: PartialItem = {
         type: ItemType.Mileage,
-        description: `Mileage (0 mi @ $${mileageRate}/mi)`,
+        description: mileageDescription(0, mileageRate),
         days: 0,
         quantity: 0,
         rate: mileageRate,
@@ -95,7 +95,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
     const item = { ...updated[idx], ...updates }
     // Auto-update mileage description
     if (item.type === ItemType.Mileage && ('quantity' in updates || 'rate' in updates)) {
-      item.description = `Mileage (${item.quantity} mi @ $${item.rate}/mi)`
+      item.description = mileageDescription(item.quantity, item.rate)
     }
     updated[idx] = item
     onChange(updated)
@@ -114,10 +114,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
       : []
   ).filter((rate) => !items.some((item) => item.description === rate.name && item.type === activeTab))
 
-  const calcLineTotal = (item: PartialItem) => {
-    if (item.type === ItemType.Mileage) return item.quantity * item.rate
-    return item.days * item.quantity * item.rate
-  }
+  const calcLineTotal = (item: PartialItem) => lineItemAmount(item)
 
   // Tab counts
   const getTabCount = (value: string) => {
@@ -160,13 +157,13 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     <span className="text-sm font-medium text-gray-700">{expense.description}</span>
                     <p className="text-xs text-gray-500">${expense.amount.toFixed(2)} · {expense.category} · {formatDate(expense.date)}</p>
                   </div>
-                  {!readOnly && onUnlinkExpense && (
+                  {onUnlinkExpense && (
                     <Button size="sm" variant="danger" onClick={() => onUnlinkExpense(expense)}>Remove</Button>
                   )}
                 </div>
               ))}
               {/* Available expenses to add */}
-              {!readOnly && availableExpenses.length > 0 && (
+              {availableExpenses.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {availableExpenses.map((expense) => (
                     <Button
@@ -175,7 +172,8 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                       variant="secondary"
                       onClick={() => onLinkExpense?.(expense)}
                     >
-                      + {expense.description} (${expense.amount.toFixed(2)})
+                      {/* Date included — "Lunch" and "Parking" repeat across jobs */}
+                      + {expense.description} {formatDate(expense.date)} (${expense.amount.toFixed(2)})
                     </Button>
                   ))}
                 </div>
@@ -205,7 +203,6 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     value={mItem.quantity || ''}
                     onChange={(e) => updateItem(mIdx, { quantity: parseFloat(e.target.value) || 0 })}
                     autoComplete="off"
-                    disabled={readOnly}
                   />
                   <Input
                     label="$/mi"
@@ -214,7 +211,6 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     value={mItem.rate || ''}
                     onChange={(e) => updateItem(mIdx, { rate: parseFloat(e.target.value) || 0 })}
                     autoComplete="off"
-                    disabled={readOnly}
                   />
                   <div className="flex items-end pb-1">
                     <span className="text-sm font-medium text-gray-700">
@@ -232,7 +228,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
       {(activeTab === ItemType.Labor || activeTab === ItemType.Equipment) && (
         <>
           {/* Quick add from saved rates */}
-          {!readOnly && activeRates.length > 0 && (
+          {activeRates.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               {activeRates.map((rate) => (
                 <Button
@@ -253,7 +249,7 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
               <div key={idx} className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">{item.description || 'Untitled'}</span>
-                  {!readOnly && <Button size="sm" variant="danger" onClick={() => removeItem(idx)}>Remove</Button>}
+                  <Button size="sm" variant="danger" onClick={() => removeItem(idx)}>Remove</Button>
                 </div>
                 <div className="grid grid-cols-4 gap-2 mb-2">
                   <Input
@@ -264,7 +260,6 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     value={item.days || ''}
                     onChange={(e) => updateItem(idx, { days: parseFloat(e.target.value) || 0 })}
                     autoComplete="off"
-                    disabled={readOnly}
                   />
                   <Input
                     label="Qty"
@@ -273,7 +268,6 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     value={item.quantity || ''}
                     onChange={(e) => updateItem(idx, { quantity: parseFloat(e.target.value) || 0 })}
                     autoComplete="off"
-                    disabled={readOnly}
                   />
                   <Input
                     label="Day Rate ($)"
@@ -282,7 +276,6 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
                     value={item.rate || ''}
                     onChange={(e) => updateItem(idx, { rate: parseFloat(e.target.value) || 0 })}
                     autoComplete="off"
-                    disabled={readOnly}
                   />
                   <div className="flex items-end pb-1">
                     <span className="text-sm font-medium text-gray-700">
@@ -303,11 +296,9 @@ export function LineItemEditor({ items, onChange, laborRates, equipmentRates, se
             ))}
           </div>
 
-          {!readOnly && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={openNewInlineRate}>+ New {activeTab === 'labor' ? 'Labor' : 'Gear'} Rate</Button>
-            </div>
-          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={openNewInlineRate}>+ New {activeTab === 'labor' ? 'Labor' : 'Gear'} Rate</Button>
+          </div>
         </>
       )}
 

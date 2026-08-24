@@ -20,6 +20,14 @@ const sortOptions: { value: SortField; label: string }[] = [
   { value: 'amount', label: 'Total Amount' },
 ]
 
+/**
+ * Upcoming reads forward from today, so the nearest job belongs at the top.
+ * Every other view looks backwards — lead with the most recent instead.
+ */
+function defaultSortAsc(filter: string): boolean {
+  return filter === 'Upcoming'
+}
+
 export function JobsPage() {
   const navigate = useNavigate()
   const { clients } = useClients()
@@ -27,7 +35,14 @@ export function JobsPage() {
   const { loading } = useDataContext()
   const [filter, setFilter] = useState<string>('Upcoming')
   const [sortBy, setSortBy] = useState<SortField>('date')
-  const [sortAsc, setSortAsc] = useState(true)
+  const [sortAsc, setSortAsc] = useState(() => defaultSortAsc('Upcoming'))
+
+  // Switching views resets to that view's natural direction; the toggle still
+  // overrides it from there.
+  const changeFilter = (value: string) => {
+    setFilter(value)
+    setSortAsc(defaultSortAsc(value))
+  }
 
   const activeJobs = jobs.filter((j) => !j.cancelled)
   const today = new Date().toISOString().split('T')[0]
@@ -94,15 +109,15 @@ export function JobsPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <Card className="!p-3" onClick={() => setFilter(JobStatus.Paid)}>
+        <Card className="!p-3" onClick={() => changeFilter(JobStatus.Paid)}>
           <p className="text-xs text-gray-500">Earnings YTD</p>
           <p className="text-lg font-bold text-green-600">${earnings.toFixed(2)}</p>
         </Card>
-        <Card className="!p-3" onClick={() => setFilter(JobStatus.Invoiced)}>
+        <Card className="!p-3" onClick={() => changeFilter(JobStatus.Invoiced)}>
           <p className="text-xs text-gray-500">Receivables</p>
           <p className="text-lg font-bold">${receivables.toFixed(2)}</p>
         </Card>
-        <Card className="!p-3" onClick={() => setFilter('Upcoming')}>
+        <Card className="!p-3" onClick={() => changeFilter('Upcoming')}>
           <p className="text-xs text-gray-500">Pipeline</p>
           <p className="text-lg font-bold text-primary">${pipeline.toFixed(2)}</p>
         </Card>
@@ -114,7 +129,7 @@ export function JobsPage() {
           <Select
             value={filter}
             options={statusFilters.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
-            onChange={(e) => setFilter(e.target.value)}
+            onChange={(e) => changeFilter(e.target.value)}
           />
         </div>
         <div className="w-full">

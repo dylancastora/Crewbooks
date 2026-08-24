@@ -9,6 +9,7 @@ import { getCommunications } from '../services/api/communications'
 import { getSettings } from '../services/api/settings'
 import { getRates } from '../services/api/rates'
 import { setRateLimitCallback } from '../services/google/sheets'
+import { setConnectionLostCallback } from '../services/google/http'
 import { conformSchema } from '../services/api/conform'
 import type { Job, Client, Contact, Expense, JobItem, Communication, Settings, LaborRate, EquipmentRate } from '../types'
 
@@ -67,6 +68,10 @@ interface DataContextValue {
   isRateLimited: boolean
   retryAfterTimestamp: number | null
   setRateLimited: (retryAfterSeconds: number) => void
+
+  // Connectivity
+  connectionLost: boolean
+  dismissConnectionLost: () => void
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -114,11 +119,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setRateLimitState({ isRateLimited: true, retryAfterTimestamp: timestamp })
   }, [])
 
+  const [connectionLost, setConnectionLost] = useState(false)
+  const dismissConnectionLost = useCallback(() => setConnectionLost(false), [])
+
   // Register rate limit callback with sheets.ts
   useEffect(() => {
     setRateLimitCallback(setRateLimited)
     return () => setRateLimitCallback(() => {})
   }, [setRateLimited])
+
+  // A request that timed out or never reached Google — the token may also have
+  // expired while the app sat in the background, so the way out is a reload.
+  useEffect(() => {
+    setConnectionLostCallback(() => setConnectionLost(true))
+    return () => setConnectionLostCallback(null)
+  }, [])
 
   // Individual reload functions
   const reloadJobs = useCallback(async () => {
@@ -266,6 +281,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         isRateLimited: rateLimitState.isRateLimited,
         retryAfterTimestamp: rateLimitState.retryAfterTimestamp,
         setRateLimited,
+        connectionLost,
+        dismissConnectionLost,
       }}
     >
       {children}

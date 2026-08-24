@@ -1,4 +1,5 @@
 import { sanitizeFilename, sanitizeHeaderValue } from '../../utils/sanitize'
+import { apiFetch } from './http'
 
 interface Attachment {
   filename: string
@@ -69,7 +70,7 @@ export async function sendEmail(token: string, params: EmailParams): Promise<voi
   const raw = buildMultipartMime(params)
   const encoded = base64urlEncode(raw)
 
-  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+  const res = await apiFetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

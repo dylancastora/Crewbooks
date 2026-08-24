@@ -5,6 +5,19 @@ function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`
 }
 
+/** The same Bill To block the invoice PDF carries, so the two always agree. */
+function buildBillToHtml(client: Client): string {
+  const cityLine = [client.city, client.state, client.zip].filter(Boolean).join(', ')
+  const lines = [client.company, client.address, cityLine].filter(Boolean)
+
+  return `
+    <div style="margin: 20px 0;">
+      <p style="margin: 0 0 4px; color: #505050; font-size: 13px;">Bill To:</p>
+      ${lines.map((line) => `<p style="margin: 0; color: #000;">${escapeHtml(line)}</p>`).join('')}
+    </div>
+  `
+}
+
 function buildLineItemsHtml(job: Job, items: JobItem[], expenses: Expense[], totals: JobTotals): string {
   const dailyItems = items.filter((i) => i.type === 'labor' || i.type === 'equipment')
   const mileageItems = items.filter((i) => i.type === 'mileage')
@@ -95,17 +108,20 @@ export function generateQuoteHtml(
   items: JobItem[],
   expenses: Expense[],
   client: Client,
-  contacts: Contact[],
+  recipient: Contact | null,
   settings: Settings,
   totals: JobTotals,
 ): string {
-  const recipientName = contacts[0]?.name || client.company
-
+  // One body per recipient — each contact is greeted by their own name, while
+  // the Bill To block below stays the client's, identical for all of them.
+  const recipientName = recipient?.name || client.company
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #1e40af;">Quote #${escapeHtml(job.jobNumber)}</h2>
       <p>Hi ${escapeHtml(recipientName)},</p>
       <p>Please find the quote details below for <strong>${escapeHtml(job.title || `Job #${job.jobNumber}`)}</strong>.</p>
+
+      ${buildBillToHtml(client)}
       ${job.shootDates ? `<p><strong>Shoot Dates:</strong> ${escapeHtml(job.shootDates)}</p>` : ''}
 
       ${buildLineItemsHtml(job, items, expenses, totals)}
@@ -128,17 +144,20 @@ export function generateInvoiceHtml(
   items: JobItem[],
   expenses: Expense[],
   client: Client,
-  contacts: Contact[],
+  recipient: Contact | null,
   settings: Settings,
   totals: JobTotals,
 ): string {
-  const recipientName = contacts[0]?.name || client.company
-
+  // One body per recipient — each contact is greeted by their own name, while
+  // the Bill To block below stays the client's, identical for all of them.
+  const recipientName = recipient?.name || client.company
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #1e40af;">Invoice #${escapeHtml(job.jobNumber)}</h2>
       <p>Hi ${escapeHtml(recipientName)},</p>
       <p>Please find the invoice details below for <strong>${escapeHtml(job.title || `Job #${job.jobNumber}`)}</strong>.</p>
+
+      ${buildBillToHtml(client)}
       ${job.shootDates ? `<p><strong>Shoot Dates:</strong> ${escapeHtml(job.shootDates)}</p>` : ''}
 
       ${buildLineItemsHtml(job, items, expenses, totals)}

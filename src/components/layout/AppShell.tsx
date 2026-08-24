@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { RateLimitModal } from './RateLimitModal'
+import { ConnectionLostToast } from './ConnectionLostToast'
 import { OnboardingPrompt } from '../OnboardingPrompt'
 
 export function AppShell() {
@@ -16,6 +17,7 @@ export function AppShell() {
       <BottomNav />
       <OnboardingPrompt />
       <RateLimitModal />
+      <ConnectionLostToast />
     </div>
   )
 }

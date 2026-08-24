@@ -1,4 +1,5 @@
 import { getRows, appendRow, batchGet } from '../google/sheets'
+import { apiFetch } from '../google/http'
 import { DEFAULT_SETTINGS } from './init'
 
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
@@ -166,7 +167,7 @@ async function getSheetMeta(spreadsheetId: string, token: string): Promise<{
   sheetMap: Record<string, number>
   existingProtections: { protectedRangeId: number; warningOnly: boolean }[]
 }> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${SHEETS_BASE}/${spreadsheetId}?fields=sheets(properties,protectedRanges)`,
     { headers: authHeaders(token) },
   )
@@ -279,7 +280,7 @@ async function conformColumns(spreadsheetId: string, token: string): Promise<voi
 
     const allValues = [newHeaders, ...newRows]
     const range = `${tab}!A1`
-    await fetch(
+    await apiFetch(
       `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
       { method: 'PUT', headers, body: JSON.stringify({ values: allValues }) },
     )
@@ -427,7 +428,7 @@ async function conformSheetPresentation(
 
   // 3. Send everything in one batchUpdate (1 API call)
   if (requests.length > 0) {
-    await fetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
+    await apiFetch(`${SHEETS_BASE}/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify({ requests }),

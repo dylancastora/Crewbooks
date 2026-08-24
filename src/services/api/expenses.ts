@@ -1,4 +1,4 @@
-import { getRows, appendRow, updateRowById, deleteRowById } from '../google/sheets'
+import { getRows, appendRow, updateRowById, updateRowsById, deleteRowById } from '../google/sheets'
 import type { Expense } from '../../types'
 
 function generateId(): string {
@@ -46,15 +46,54 @@ export async function createExpense(
   return expense
 }
 
+function expenseToRow(expense: Expense): string[] {
+  const obj = expense as unknown as Record<string, unknown>
+  return EXPENSE_HEADERS.map((h) => String(obj[h] ?? ''))
+}
+
 export async function updateExpense(
   spreadsheetId: string,
   expense: Expense,
   token: string,
 ): Promise<void> {
   expense.updatedAt = now()
-  const obj = expense as unknown as Record<string, unknown>
-  const row = EXPENSE_HEADERS.map((h) => String(obj[h] ?? ''))
-  await updateRowById(spreadsheetId, 'Expenses', expense.id, row, token)
+  await updateRowById(spreadsheetId, 'Expenses', expense.id, expenseToRow(expense), token)
+}
+
+/** Write several expenses in one request — used when a job's links change. */
+export async function updateExpenses(
+  spreadsheetId: string,
+  expenses: Expense[],
+  token: string,
+): Promise<Expense[]> {
+  if (expenses.length === 0) return []
+  const stamped = expenses.map((e) => ({ ...e, updatedAt: now() }))
+  await updateRowsById(
+    spreadsheetId,
+    'Expenses',
+    stamped.map((e) => ({ id: e.id, row: expenseToRow(e) })),
+    token,
+  )
+  return stamped
+}
+
+/**
+ * Detach a deleted job's expenses instead of deleting them — the spend still
+ * happened and still belongs to the client, so the record survives the job and
+ * goes back to unbilled so it can be billed to another one.
+ */
+export async function unlinkExpensesFromJob(
+  spreadsheetId: string,
+  jobId: string,
+  token: string,
+): Promise<void> {
+  const linked = (await getExpenses(spreadsheetId, token)).filter((e) => e.jobId === jobId)
+  if (linked.length === 0) return
+  await updateExpenses(
+    spreadsheetId,
+    linked.map((e) => ({ ...e, jobId: '', billed: false })),
+    token,
+  )
 }
 
 export async function deleteExpense(

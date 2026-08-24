@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useExpenses } from '../hooks/useExpenses'
 import { useClients } from '../hooks/useClients'
@@ -15,6 +15,8 @@ import { DropdownMenu } from '../components/ui/DropdownMenu'
 import { ReceiptUploader } from '../components/expenses/ReceiptUploader'
 import { formatDate } from '../utils/formatDate'
 import { ExpenseCategory } from '../types'
+import { matchesExpenseStatus, expenseStatus } from '../utils/expenseLinks'
+import type { ExpenseStatusFilter } from '../utils/expenseLinks'
 import type { Expense } from '../types'
 
 const categoryOptions = [
@@ -31,6 +33,22 @@ const categoryOptions = [
 const filterCategoryOptions = [
   { value: '', label: 'All Categories' },
   ...categoryOptions.slice(1),
+]
+
+const statusFilterOptions: { value: ExpenseStatusFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'billed', label: 'Billed' },
+  { value: 'unbilled', label: 'Unbilled' },
+  { value: 'internal', label: 'Internal' },
+]
+
+type SortField = 'date' | 'amount' | 'client' | 'category'
+
+const sortOptions: { value: SortField; label: string }[] = [
+  { value: 'date', label: 'Date' },
+  { value: 'amount', label: 'Amount' },
+  { value: 'client', label: 'Client' },
+  { value: 'category', label: 'Category' },
 ]
 
 const emptyExpense = {
@@ -82,13 +100,36 @@ export function ExpensesPage() {
   const [form, setForm] = useState(emptyExpense)
   const [saving, setSaving] = useState(false)
   const [filterCategory, setFilterCategory] = useState('')
+  const [filterStatus, setFilterStatus] = useState<ExpenseStatusFilter>('all')
+  const [sortBy, setSortBy] = useState<SortField>('date')
+  // Most recent first — the expense you just entered is the one you're looking at.
+  const [sortAsc, setSortAsc] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const filteredExpenses = filterCategory
-    ? expenses.filter((e) => e.category === filterCategory)
-    : expenses
-
   const getClientName = (clientId: string) => clients.find((c) => c.id === clientId)?.company || ''
+
+  const visibleExpenses = useMemo(() => {
+    const companyById = new Map(clients.map((c) => [c.id, c.company]))
+    const filtered = expenses.filter((e) => (
+      (!filterCategory || e.category === filterCategory) && matchesExpenseStatus(e, filterStatus)
+    ))
+
+    return filtered.sort((a, b) => {
+      let cmp = 0
+      if (sortBy === 'date') {
+        cmp = a.date.localeCompare(b.date)
+      } else if (sortBy === 'amount') {
+        cmp = a.amount - b.amount
+      } else if (sortBy === 'client') {
+        cmp = (companyById.get(a.clientId) || '').localeCompare(companyById.get(b.clientId) || '')
+      } else {
+        cmp = a.category.localeCompare(b.category)
+      }
+      // Same date or category — break the tie on amount to keep the order stable.
+      if (cmp === 0 && sortBy !== 'amount') cmp = a.amount - b.amount
+      return sortAsc ? cmp : -cmp
+    })
+  }, [expenses, clients, filterCategory, filterStatus, sortBy, sortAsc])
 
   const selectedClient = clients.find((c) => c.id === form.clientId)
 
@@ -140,19 +181,53 @@ export function ExpensesPage() {
         <Button onClick={openNew} size="sm">+ Add Expense</Button>
       </div>
 
-      <div className="mb-4">
-        <Select
-          value={filterCategory}
-          options={filterCategoryOptions}
-          onChange={(e) => setFilterCategory(e.target.value)}
-        />
+      <div className="flex gap-2 mb-2 items-end">
+        <div className="w-full">
+          <p className="text-xs text-gray-500 mb-1">Status</p>
+          <Select
+            value={filterStatus}
+            options={statusFilterOptions}
+            onChange={(e) => setFilterStatus(e.target.value as ExpenseStatusFilter)}
+          />
+        </div>
+        <div className="w-full">
+          <p className="text-xs text-gray-500 mb-1">Category</p>
+          <Select
+            value={filterCategory}
+            options={filterCategoryOptions}
+            onChange={(e) => setFilterCategory(e.target.value)}
+          />
+        </div>
       </div>
 
-      {filteredExpenses.length === 0 ? (
-        <EmptyState message="No expenses yet." actionLabel="Add Expense" onAction={openNew} />
+      <div className="flex gap-2 mb-4 items-end">
+        <div className="w-full">
+          <p className="text-xs text-gray-500 mb-1">Sort by</p>
+          <Select
+            value={sortBy}
+            options={sortOptions}
+            onChange={(e) => setSortBy(e.target.value as SortField)}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setSortAsc(!sortAsc)}
+          className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors text-lg"
+          title={sortAsc ? 'Ascending' : 'Descending'}
+        >
+          {sortAsc ? '↑' : '↓'}
+        </button>
+      </div>
+
+      {visibleExpenses.length === 0 ? (
+        <EmptyState
+          message={expenses.length === 0 ? 'No expenses yet.' : 'No expenses match these filters.'}
+          actionLabel="Add Expense"
+          onAction={openNew}
+        />
       ) : (
         <div className="space-y-2">
-          {filteredExpenses.map((expense) => (
+          {visibleExpenses.map((expense) => (
             <Card key={expense.id}>
               <div
                 className="flex items-center justify-between cursor-pointer"
@@ -161,7 +236,7 @@ export function ExpensesPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium">{expense.description}</h3>
-                    {expense.billed && (
+                    {expenseStatus(expense) === 'billed' && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Billed</span>
                     )}
                   </div>

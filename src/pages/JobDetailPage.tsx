@@ -6,10 +6,11 @@ import { useClients } from '../hooks/useClients'
 import { useRates } from '../hooks/useRates'
 import { useSettings } from '../hooks/useSettings'
 import { useExpenses } from '../hooks/useExpenses'
+import { useCommunications } from '../hooks/useCommunications'
 import { useDataContext } from '../context/DataProvider'
 import { getJobItems, setJobItems } from '../services/api/jobItems'
 import { generateJobNumber } from '../services/api/jobs'
-import { JobStatus, Unit } from '../types'
+import { Unit } from '../types'
 import { JobForm } from '../components/jobs/JobForm'
 import { LineItemEditor } from '../components/jobs/LineItemEditor'
 import { JobSummary } from '../components/jobs/JobSummary'
@@ -17,6 +18,8 @@ import { Spinner } from '../components/ui/Spinner'
 import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
 import { formatDate as formatDateDisplay } from '../utils/formatDate'
+import { partitionExpenses, buildExpenseLinkUpdates } from '../utils/expenseLinks'
+import { lineItemAmount } from '../utils/lineItems'
 import type { Job, JobItem, Expense } from '../types'
 
 type PartialItem = Omit<JobItem, 'id' | 'jobId' | 'jobNumber' | 'sortOrder' | 'amount'>
@@ -24,6 +27,18 @@ type PartialItem = Omit<JobItem, 'id' | 'jobId' | 'jobNumber' | 'sortOrder' | 'a
 function padJobNumber(num: string): string {
   const n = parseInt(num) || 1
   return String(n).padStart(4, '0')
+}
+
+function withId(ids: Set<string>, id: string): Set<string> {
+  if (ids.has(id)) return ids
+  return new Set(ids).add(id)
+}
+
+function withoutId(ids: Set<string>, id: string): Set<string> {
+  if (!ids.has(id)) return ids
+  const next = new Set(ids)
+  next.delete(id)
+  return next
 }
 
 export function JobDetailPage() {
@@ -34,7 +49,8 @@ export function JobDetailPage() {
   const { clients, contacts, createClient, createContact } = useClients()
   const { labor, equipment, createRate } = useRates()
   const { settings } = useSettings()
-  const { expenses, updateExpense } = useExpenses()
+  const { expenses, updateExpenses } = useExpenses()
+  const { getForJob } = useCommunications()
   const { setAllItems } = useDataContext()
   const { showToast } = useToast()
 
@@ -56,8 +72,8 @@ export function JobDetailPage() {
   const [items, setItems] = useState<PartialItem[]>([])
   const [saving, setSaving] = useState(false)
   const [loadingItems, setLoadingItems] = useState(!isNew)
-  const [pendingLinks, setPendingLinks] = useState<Expense[]>([])
-  const [pendingUnlinks, setPendingUnlinks] = useState<Expense[]>([])
+  const [pendingLinkIds, setPendingLinkIds] = useState<Set<string>>(() => new Set())
+  const [pendingUnlinkIds, setPendingUnlinkIds] = useState<Set<string>>(() => new Set())
   const [isDirty, setIsDirty] = useState(false)
   const initialLoadDone = useRef(false)
 
@@ -167,27 +183,26 @@ export function JobDetailPage() {
   }, [existingJob, spreadsheetId, getToken])
 
   // Expense linking — deferred until save
-  const pendingLinkIds = new Set(pendingLinks.map((e) => e.id))
-  const pendingUnlinkIds = new Set(pendingUnlinks.map((e) => e.id))
-  const linkedExpenses = [
-    ...expenses.filter((e) => e.jobId === existingJob?.id && !pendingUnlinkIds.has(e.id)),
-    ...pendingLinks,
-  ]
-  const availableExpenses = [
-    ...expenses.filter((e) => e.clientId === formData.clientId && !e.billed && !pendingLinkIds.has(e.id)),
-    ...pendingUnlinks,
-  ]
+  const { linked: linkedExpenses, available: availableExpenses } = useMemo(
+    () => partitionExpenses(expenses, {
+      jobId: existingJob?.id || '',
+      clientId: formData.clientId,
+      pendingLinkIds,
+      pendingUnlinkIds,
+    }),
+    [expenses, existingJob?.id, formData.clientId, pendingLinkIds, pendingUnlinkIds],
+  )
   const expensesSubtotal = linkedExpenses.reduce((sum, e) => sum + e.amount, 0)
 
   const handleLinkExpense = useCallback((expense: Expense) => {
-    setPendingUnlinks((prev) => prev.filter((e) => e.id !== expense.id))
-    setPendingLinks((prev) => prev.some((e) => e.id === expense.id) ? prev : [...prev, expense])
+    setPendingUnlinkIds((prev) => withoutId(prev, expense.id))
+    setPendingLinkIds((prev) => withId(prev, expense.id))
     setIsDirty(true)
   }, [])
 
   const handleUnlinkExpense = useCallback((expense: Expense) => {
-    setPendingLinks((prev) => prev.filter((e) => e.id !== expense.id))
-    setPendingUnlinks((prev) => [...prev, expense])
+    setPendingLinkIds((prev) => withoutId(prev, expense.id))
+    setPendingUnlinkIds((prev) => withId(prev, expense.id))
     setIsDirty(true)
   }, [])
 
@@ -248,9 +263,7 @@ export function JobDetailPage() {
       jobId: '',
       jobNumber: '',
       sortOrder: idx,
-      amount: item.type === 'mileage'
-        ? item.quantity * item.rate
-        : item.days * item.quantity * item.rate,
+      amount: lineItemAmount(item),
     }))
 
     let savedJob: Job | undefined
@@ -283,17 +296,12 @@ export function JobDetailPage() {
     }
 
     if (savedJob) {
-      // Persist expense link/unlink operations
-      await Promise.all([
-        ...pendingLinks.map((expense) =>
-          updateExpense({ ...expense, jobId: savedJob!.id, billed: true })
-        ),
-        ...pendingUnlinks.map((expense) =>
-          updateExpense({ ...expense, jobId: '', billed: false })
-        ),
-      ])
-      setPendingLinks([])
-      setPendingUnlinks([])
+      // Persist expense link/unlink as a single batched write
+      await updateExpenses(
+        buildExpenseLinkUpdates(expenses, savedJob.id, pendingLinkIds, pendingUnlinkIds),
+      )
+      setPendingLinkIds(new Set())
+      setPendingUnlinkIds(new Set())
       // Update items in context so JobCard/totals reflect the saved line items
       setAllItems((prev) => [
         ...prev.filter((item) => item.jobId !== savedJob!.id),
@@ -318,7 +326,12 @@ export function JobDetailPage() {
     }
   }
 
-  const lineItemsReadOnly = existingJob ? ([JobStatus.Invoiced, JobStatus.Paid] as string[]).includes(existingJob.status) : false
+  // An invoice sent in error has to be fixable, so nothing here is locked by
+  // status. Already-sent quotes and invoices are historical records and are
+  // never rewritten — the revision only reaches the client on the next send.
+  const lastSent = existingJob
+    ? [...getForJob(existingJob.id)].sort((a, b) => a.dateSent.localeCompare(b.dateSent)).pop()
+    : undefined
 
   if (!isNew && !existingJob) return <Spinner className="py-12" />
   if (loadingItems) return <Spinner className="py-12" />
@@ -331,6 +344,13 @@ export function JobDetailPage() {
         </button>
         <h1 className="text-2xl font-bold">{isNew ? 'New Job' : `Job #${existingJob?.jobNumber}`}</h1>
       </div>
+
+      {lastSent && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          A {lastSent.type} was sent on {formatDateDisplay(lastSent.dateSent)}. Edits here don't change
+          what was already sent — save your changes, then resend the {lastSent.type} from the job menu.
+        </div>
+      )}
 
       <div className="space-y-6">
         <JobForm
@@ -355,7 +375,6 @@ export function JobDetailPage() {
             equipmentRates={equipment}
             settings={settings}
             shootDays={shootDays || 1}
-            readOnly={lineItemsReadOnly}
             onCreateRate={handleCreateRate}
             clientId={formData.clientId}
             linkedExpenses={linkedExpenses}
